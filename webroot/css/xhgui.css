@@ -312,3 +312,14 @@ tr .no-results {
 .footer-text {
     text-align: center;
 }
+
+
+
+
+li.server_params {
+   overflow-y: scroll;
+   max-height: 500px;
+   border: 1px solid #DDDDDD;
+   padding: 3px;
+
+}
