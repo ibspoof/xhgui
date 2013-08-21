@@ -19,6 +19,7 @@ Changes from original Xhgui
 
  * Support for Multiple Servers/Hosts using the same installation
  * Fix for simplfied URLs with numeric query values
+ * Added support for enabling tracing on all calls if XHPROF_ENABLED cookie is present
 
 
 Installation
