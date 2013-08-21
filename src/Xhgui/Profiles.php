@@ -8,6 +8,8 @@ class Xhgui_Profiles
 
     protected $_mapper;
 
+    protected $_server;
+
     public function __construct(MongoDb $db)
     {
         $this->_collection = $db->results;
@@ -19,9 +21,15 @@ class Xhgui_Profiles
      *
      * @return Xhgui_Profile
      */
-    public function latest()
+    public function latest($server=null)
     {
-        $cursor = $this->_collection->find()
+        $conditions = array();
+
+        if (!is_null($server)) {
+            $conditions = array('meta.SERVER.SERVER_NAME' => $server);
+        }
+
+        $cursor = $this->_collection->find($conditions)
             ->sort(array('meta.request_date' => -1))
             ->limit(1);
         return $this->_wrap($cursor);
@@ -226,8 +234,9 @@ class Xhgui_Profiles
      * @param array $options The find options to use.
      * @return array An array of result data.
      */
-    public function getAll($options = array())
+    public function getAll($options = array(), $server='')
     {
+        $this->_mapper->server = $server;
         return $this->paginate($options);
     }
 
@@ -271,5 +280,16 @@ class Xhgui_Profiles
             $results[] = new Xhgui_Profile($row);
         }
         return $results;
+    }
+
+
+
+    public function getServers()
+    {
+        $cursor = $this->_collection->distinct('meta.SERVER.SERVER_NAME');
+
+        return array(
+            'results' => $cursor,
+        );
     }
 }

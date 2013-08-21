@@ -7,6 +7,7 @@ class Xhgui_Controller_Run
         $this->_app = $app;
         $this->_profiles = $profiles;
         $this->_watches = $watches;
+
     }
 
     public function index()
@@ -22,19 +23,47 @@ class Xhgui_Controller_Run
         }
         $sort = $request->get('sort');
 
+        $result = $this->_profiles->getServers();
+
+        $title = 'Select Server';
+
+        $this->_app->render('home/servers.twig', array(
+            'base_url' => 'home',
+            'servers' => $result['results'],
+            'title' => $title,
+            'hideMenu' => true
+        ));
+    }
+
+    public function server($server)
+    {
+        $request = $this->_app->request();
+
+        $search = array();
+        $search['server'] = $server;
+        $keys = array('date_start', 'date_end', 'url');
+
+        foreach ($keys as $key) {
+            if ($request->get($key)) {
+                $search[$key] = $request->get($key);
+            }
+        }
+
+        $sort = $request->get('sort');
+
         $result = $this->_profiles->getAll(array(
-            'sort' => $sort,
-            'page' => $request->get('page'),
-            'direction' => $request->get('direction'),
-            'perPage' => $this->_app->config('page.limit'),
-            'conditions' => $search
+            'sort'       => $sort,
+            'page'       => $request->get('page'),
+            'direction'  => $request->get('direction'),
+            'perPage'    => $this->_app->config('page.limit'),
+            'conditions' => $search,
         ));
 
-        $title = 'Recent runs';
+        $title = 'Recent runs on ';
         $titleMap = array(
-            'wt' => 'Longest wall time',
-            'cpu' => 'Most CPU time',
-            'mu' => 'Highest memory use',
+            'wt'  => 'Longest wall time on ',
+            'cpu' => 'Most CPU time on ',
+            'mu'  => 'Highest memory use on ',
         );
         if (isset($titleMap[$sort])) {
             $title = $titleMap[$sort];
@@ -42,26 +71,28 @@ class Xhgui_Controller_Run
 
         $paging = array(
             'total_pages' => $result['totalPages'],
-            'page' => $result['page'],
-            'sort' => $sort,
-            'direction' => $result['direction']
+            'page'        => $result['page'],
+            'sort'        => $sort,
+            'direction'   => $result['direction']
         );
 
         $this->_app->render('runs/list.twig', array(
-            'paging' => $paging,
-            'base_url' => 'home',
-            'runs' => $result['results'],
+            'paging'      => $paging,
+            'base_url'    => 'home',
+            'runs'        => $result['results'],
             'date_format' => $this->_app->config('date.format'),
-            'search' => $search,
-            'has_search' => strlen(implode('', $search)) > 0,
-            'title' => $title
+            'search'      => $search,
+            'has_search'  => strlen(implode('', $search)) > 0,
+            'title'       => $title,
+            'server'      => $server,
         ));
     }
 
-    public function view()
+    public function view($server='')
     {
         $request = $this->_app->request();
         $detailCount = $this->_app->config('detail.count');
+
         $result = $this->_profiles->get($request->get('id'));
 
         $result->calculateExclusive();
@@ -74,7 +105,7 @@ class Xhgui_Controller_Run
 
         // Watched Functions Block
         $watchedFunctions = array();
-        foreach ($this->_watches->getAll() as $watch) {
+        foreach ($this->_watches->getAll($server) as $watch) {
             $matches = $result->getWatched($watch['name']);
             if ($matches) {
                 $watchedFunctions = array_merge($watchedFunctions, $matches);
@@ -89,10 +120,11 @@ class Xhgui_Controller_Run
             'memory' => $memoryChart,
             'watches' => $watchedFunctions,
             'date_format' => $this->_app->config('date_format'),
+            'server' => $server
         ));
     }
 
-    public function url()
+    public function url($server)
     {
         $request = $this->_app->request();
         $perPage = $this->_app->config('page.limit');
@@ -135,10 +167,11 @@ class Xhgui_Controller_Run
             'chart_data' => $chartData,
             'date_format' => $this->_app->config('date.format'),
             'search' => array_merge($search, array('url' => $request->get('url'))),
+            'server' => $server
         ));
     }
 
-    public function compare()
+    public function compare($server)
     {
         $request = $this->_app->request();
 
@@ -189,11 +222,12 @@ class Xhgui_Controller_Run
             'search' => array(
                 'base' => $request->get('base'),
                 'head' => $request->get('head'),
+                'server'      => $server
             )
         ));
     }
 
-    public function symbol()
+    public function symbol($server)
     {
         $request = $this->_app->request();
         $id = $request->get('id');
@@ -209,10 +243,11 @@ class Xhgui_Controller_Run
             'parents' => $parents,
             'current' => $current,
             'children' => $children,
+            'server'      => $server
         ));
     }
 
-    public function callgraph()
+    public function callgraph($server)
     {
         $request = $this->_app->request();
         $profile = $this->_profiles->get($request->get('id'));
@@ -221,6 +256,7 @@ class Xhgui_Controller_Run
             'profile' => $profile,
             'date_format' => $this->_app->config('date_format'),
             'callgraph' => $profile->getCallgraph(),
+            'server'      => $server
         ));
     }
 

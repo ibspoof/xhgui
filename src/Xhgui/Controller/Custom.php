@@ -11,16 +11,19 @@ class Xhgui_Controller_Custom
         $this->_profiles = $profiles;
     }
 
-    public function get()
+    public function get($server)
     {
-        $this->_app->render('custom/create.twig');
+        $this->_app->render('custom/create.twig', array(
+            'server' => $server
+        ));
     }
 
-    public function help()
+    public function help($server)
     {
         $res = $this->_profiles->latest();
         $this->_app->render('custom/help.twig', array(
-            'data' => print_r($res[0]->toArray(), 1)
+            'data' => print_r($res[0]->toArray(), 1),
+            'server' => $server
         ));
     }
 

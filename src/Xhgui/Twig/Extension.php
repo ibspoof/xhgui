@@ -49,13 +49,13 @@ class Xhgui_Twig_Extension extends Twig_Extension
      * @param array $queryarg Additional querystring arguments.
      * @return string url.
      */
-    public function url($name, $queryargs = array())
+    public function url($name, $queryargs = array(), $server='')
     {
         $query = '';
         if (!empty($queryargs)) {
             $query = '?' . http_build_query($queryargs);
         }
-        return $this->_app->urlFor($name)  . $query;
+        return $this->_app->urlFor($name, array('server' => $server)) . $query;
     }
 
     public function staticUrl($url)

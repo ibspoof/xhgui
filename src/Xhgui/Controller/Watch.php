@@ -12,16 +12,17 @@ class Xhgui_Controller_Watch
         $this->_watches = $watches;
     }
 
-    public function get()
+    public function get($server)
     {
-        $watched = $this->_watches->getAll();
+        $watched = $this->_watches->getAll($server);
 
         $this->_app->render('watch/list.twig', array(
             'watched' => $watched,
+            'server'  => $server
         ));
     }
 
-    public function post()
+    public function post($server)
     {
         $app = $this->_app;
         $watches = $this->_watches;
@@ -30,11 +31,11 @@ class Xhgui_Controller_Watch
         $request = $app->request();
         foreach ((array)$request->post('watch') as $data) {
             $saved = true;
-            $watches->save($data);
+            $watches->save($data, $server);
         }
         if ($saved) {
             $app->flash('success', 'Watch functions updated.');
         }
-        $app->redirect($app->urlFor('watch.list'));
+       // $app->redirect($app->urlFor('watch.list', array('server' => $server)));
     }
 }

@@ -17,28 +17,28 @@ class Xhgui_WatchFunctions
      * @param array $data The data to save.
      * @return boolean
      */
-    public function save($data)
+    public function save($data, $server)
     {
         if (empty($data['name'])) {
             return false;
         }
-
+        
         if (!empty($data['removed']) && isset($data['_id'])) {
             $this->_collection->remove(
-                array('_id' => $data['_id']),
+                array('_id' => new MongoId($data['_id'])),
                 array('w' => 1)
             );
             return true;
         }
 
         if (empty($data['_id'])) {
+            $data['server'] = $server;
             $this->_collection->insert(
                 $data,
                 array('w' => 1)
             );
             return true;
         }
-
 
         $data['_id'] = new MongoId($data['_id']);
         $this->_collection->update(
@@ -54,9 +54,9 @@ class Xhgui_WatchFunctions
      *
      * @return array Array of watch functions.
      */
-    public function getAll()
+    public function getAll($server)
     {
-        $cursor = $this->_collection->find();
+        $cursor = $this->_collection->find(array('server' => $server));
         return array_values(iterator_to_array($cursor));
     }
 

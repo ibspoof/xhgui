@@ -14,46 +14,50 @@ $app->get('/', function () use ($di) {
     $di['runController']->index();
 })->name('home');
 
-$app->get('/run/view', function () use ($di) {
-    $di['runController']->view();
+$app->get('/:server', function ($server) use ($di) {
+    $di['runController']->server($server);
+})->name('server');
+
+$app->get('/:server/run/view', function ($server) use ($di) {
+    $di['runController']->view($server);
 })->name('run.view');
 
-$app->get('/url/view', function () use ($di) {
-    $di['runController']->url();
+$app->get('/:server/url/view', function ($server) use ($di) {
+    $di['runController']->url($server);
 })->name('url.view');
 
-$app->get('/run/compare', function () use ($di) {
-    $di['runController']->compare();
+$app->get('/:server/run/compare', function ($server) use ($di) {
+    $di['runController']->compare($server);
 })->name('run.compare');
 
-$app->get('/run/symbol', function () use ($di) {
-    $di['runController']->symbol();
+$app->get('/:server/run/symbol', function ($server) use ($di) {
+    $di['runController']->symbol($server);
 })->name('run.symbol');
 
-$app->get('/run/callgraph', function () use ($di) {
-    $di['runController']->callgraph();
+$app->get('/:server/run/callgraph', function ($server) use ($di) {
+    $di['runController']->callgraph($server);
 })->name('run.callgraph');
 
 
 // Watch function routes.
-$app->get('/watch', function () use ($di) {
-    $di['watchController']->get();
+$app->get('/:server/watch', function ($server) use ($di) {
+    $di['watchController']->get($server);
 })->name('watch.list');
 
-$app->post('/watch', function () use ($di) {
-    $di['watchController']->post();
+$app->post('/:server/watch', function ($server) use ($di) {
+    $di['watchController']->post($server);
 })->name('watch.save');
 
 
 // Custom report routes.
-$app->get('/custom', function () use ($di) {
-    $di['customController']->get();
+$app->get('/:server/custom', function ($server) use ($di) {
+    $di['customController']->get($server);
 })->name('custom.view');
 
-$app->get('/custom/help', function () use ($di) {
-    $di['customController']->help();
-})->name('custom.help');
-
-$app->post('/custom/query', function () use ($di) {
-    $di['customController']->query();
+$app->post('/:server/custom/query', function ($server) use ($di) {
+    $di['customController']->query($server);
 })->name('custom.query');
+
+$app->get('/:server/custom/help', function ($server) use ($di) {
+    $di['customController']->help($server);
+})->name('custom.help');

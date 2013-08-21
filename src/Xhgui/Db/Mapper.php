@@ -3,6 +3,7 @@
 class Xhgui_Db_Mapper
 {
 
+    public $server = null;
     /**
      * Convert request data keys into mongo values.
      *
@@ -17,9 +18,11 @@ class Xhgui_Db_Mapper
             'direction' => null,
             'perPage' => 25
         );
+
         if (isset($options['conditions'])) {
             $result['conditions'] = $this->_conditions($options['conditions']);
         }
+
         $result['direction'] = $this->_direction($options);
         $result['sort'] = $this->_sort($options);
 
@@ -56,6 +59,9 @@ class Xhgui_Db_Mapper
         }
         if (isset($search['cookie'])) {
             $conditions['meta.SERVER.HTTP_COOKIE'] = (string)$search['cookie'];
+        }
+        if (isset($search['server'])) {
+            $conditions['meta.SERVER.SERVER_NAME'] = (string)$search['server'];
         }
 
         if (isset($search['url'])) {
