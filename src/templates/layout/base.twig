@@ -18,14 +18,30 @@
                 </a>
                 <a class="brand" href="{{ url('home') }}">XHG</a>
                 <div class="nav-collapse collapse">
+                    {% if hideMenu != true %}
                     <ul class="nav">
-                        <li><a href="{{ url('home') }}">Recent</a></li>
-                        <li><a href="{{ url('home', {'sort': 'wt'}) }}">Longest wall time</a></li>
-                        <li><a href="{{ url('home', {'sort': 'cpu'}) }}">Most CPU</a></li>
-                        <li><a href="{{ url('home', {'sort': 'mu'}) }}">Most memory</a></li>
-                        <li><a href="{{ url('custom.view') }}">Custom View</a></li>
-                        <li><a href="{{ url('watch.list') }}">Watch Functions</a></li>
+                        <li><a href="{{ url('server', {}, server) }}">Recent</a></li>
+                        <li><a href="{{ url('server', {'sort': 'wt'}, server) }}">Longest wall time</a></li>
+                        <li><a href="{{ url('server', {'sort': 'cpu'}, server) }}">Most CPU</a></li>
+                        <li><a href="{{ url('server', {'sort': 'mu'}, server) }}">Most memory</a></li>
+                        <li><a href="{{ url('custom.view', {}, server) }}">Custom View</a></li>
+                        <li><a href="{{ url('watch.list', {}, server) }}">Watch Functions</a></li>
                     </ul>
+                    {#<ul class="nav pull-right">#}
+                        {#<li class="dropdown">#}
+                            {#<a data-toggle="dropdown" class="dropdown-toggle" role="button" id="drop2" href="#">Server <b class="caret"></b></a>#}
+                            {#<ul aria-labelledby="drop2" role="menu" class="dropdown-menu">#}
+
+                                {#<li role="presentation">#}
+                                    {#<a href="" tabindex="-1" role="menuitem">Action</a>#}
+                                {#</li>#}
+                                {#</li>#}
+                            {#</ul>#}
+                        {#</li>#}
+
+                    {#</ul>#}
+    </div>
+                    {% endif %}
                 </div><!--/.nav-collapse -->
             </div>
         </div>
@@ -43,7 +59,7 @@
         <hr>
 
         <footer class="row-fluid footer-text">
-            <span class="span4">© Paul Reinheimer &amp; Mark Story 2012</span>
+            <span class="span4">© Paul Reinheimer &amp; Mark Story 2012 (tweaks by Brad Vernon)</span>
             <span class="span4">1,000,000 µs = 1 second</span>
             <span class="span4">1,048,576 bytes = 1 MB</span>
         </footer>

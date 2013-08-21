@@ -1,0 +1,17 @@
+{% extends 'layout/base.twig' %}
+{% import 'macros/helpers.twig' as helpers %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+{% if servers|length %}
+
+    {% for server in servers %}
+        <h3><a href="/{{ server }}">{{ server }}</a></h3>
+    {%  endfor %}
+
+{% endif %}
+
+
+
+{% endblock %}
