@@ -14,6 +14,13 @@ System Requirements
  * [MongoDB](http://www.mongodb.org/) MongoDB Itself
 
 
+Changes from original Xhgui
+====================
+
+ * Support for Multiple Servers/Hosts using the same installation
+ * Fix for simplfied URLs with numeric query values
+
+
 Installation
 ============
 
