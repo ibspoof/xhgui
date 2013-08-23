@@ -26,7 +26,7 @@
 <a class="sort-link {{ classname }}" href="{{ url(url, params) }}">{{ text }}</a>
 {% endmacro %}
 
-{% macro pagination(url, paging, search, server) %}
+{% macro pagination(url, paging, search) %}
 
 {# Hard code because I'm lazy #}
 {% set num_pages = 10 %}
@@ -59,21 +59,21 @@
 {% if page == 1 %}
     <li class="disabled"><span>&laquo;</span><li>
 {% else %}
-    <li><a href="{{ url(url, search|merge({'page': page - 1}), server) }}">&laquo;</a><li>
+    <li><a href="{{ url(url, search|merge({'page': page - 1})) }}">&laquo;</a><li>
 {% endif %}
 
 {% for i in start..end %}
     {% if i == paging.page %}
     <li class="active"><span>{{ i }}</span></li>
     {% else %}
-    <li><a href="{{ url(url, search|merge({'page': i}), server)}}">{{ i }}</a></li>
+    <li><a href="{{ url(url, search|merge({'page': i}))}}">{{ i }}</a></li>
     {% endif %}
 {% endfor %}
 
 {% if page == total_pages %}
     <li class="disabled"><span>&raquo;</span></li>
 {% else %}
-    <li><a href="{{ url(url, search|merge({'page': page + 1}), server) }}">&raquo;</a></li>
+    <li><a href="{{ url(url, search|merge({'page': page + 1})) }}">&raquo;</a></li>
 {% endif %}
 </ul>
 </div>

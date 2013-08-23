@@ -7,6 +7,9 @@ class Xhgui_Twig_Extension extends Twig_Extension
     public function __construct($app)
     {
         $this->_app = $app;
+
+        $path = $this->_app->request->getPath();
+        $this->selected_server = explode('/',$path)[1];
     }
 
     public function getName()
@@ -49,13 +52,13 @@ class Xhgui_Twig_Extension extends Twig_Extension
      * @param array $queryarg Additional querystring arguments.
      * @return string url.
      */
-    public function url($name, $queryargs = array(), $server='')
+    public function url($name, $queryargs = array())
     {
         $query = '';
         if (!empty($queryargs)) {
             $query = '?' . http_build_query($queryargs);
         }
-        return $this->_app->urlFor($name, array('server' => $server)) . $query;
+        return $this->_app->urlFor($name, array('server' => $this->selected_server)) . $query;
     }
 
     public function staticUrl($url)

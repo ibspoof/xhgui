@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<h1>{{ title }} <a href="{{ url('server', {}, server) }}">{{ server }}</a></h1>
+<h1>{{ title }} <a href="{{ url('server') }}">{{ server }}</a></h1>
 
 {% if runs|length or has_search %}
 <div class="searchbar clearfix">
@@ -14,7 +14,7 @@
         <i class="icon-search"></i> Search
     </a>
 
-    <form action="{{ url('server', {}, server) }}" method="get" class="row hide search-form form-inline">
+    <form action="{{ url('server') }}" method="get" class="row hide search-form form-inline">
         <a href="#" class="search-collapse close" title="Hide search form">&times;</a>
         <div class="control-group span4">
             <label class="control-label" for="start_date">Date range</label>
@@ -55,7 +55,7 @@
 {% endif %}
 
 {% if runs|length %}
-    {{ helpers.pagination('server', paging, search, server) }}
+    {{ helpers.pagination('server', paging, search) }}
 {% endif %}
 
 {% endblock %}

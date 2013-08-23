@@ -20,12 +20,12 @@
                 <div class="nav-collapse collapse">
                     {% if hideMenu != true %}
                     <ul class="nav">
-                        <li><a href="{{ url('server', {}, server) }}">Recent</a></li>
-                        <li><a href="{{ url('server', {'sort': 'wt'}, server) }}">Longest wall time</a></li>
-                        <li><a href="{{ url('server', {'sort': 'cpu'}, server) }}">Most CPU</a></li>
-                        <li><a href="{{ url('server', {'sort': 'mu'}, server) }}">Most memory</a></li>
-                        <li><a href="{{ url('custom.view', {}, server) }}">Custom View</a></li>
-                        <li><a href="{{ url('watch.list', {}, server) }}">Watch Functions</a></li>
+                        <li><a href="{{ url('server') }}">Recent</a></li>
+                        <li><a href="{{ url('server', {'sort': 'wt'}) }}">Longest wall time</a></li>
+                        <li><a href="{{ url('server', {'sort': 'cpu'}) }}">Most CPU</a></li>
+                        <li><a href="{{ url('server', {'sort': 'mu'}) }}">Most memory</a></li>
+                        <li><a href="{{ url('custom.view') }}">Custom View</a></li>
+                        <li><a href="{{ url('watch.list') }}">Watch Functions</a></li>
                     </ul>
                     {#<ul class="nav pull-right">#}
                         {#<li class="dropdown">#}

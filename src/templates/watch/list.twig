@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-<h1>Watched functions for <a href="{{ url('server', {}, server) }}">{{ server }}</a></h1>
+<h1>Watched functions for <a href="{{ url('server') }}">{{ server }}</a></h1>
 
 <p>
 Watch functions allow you to set function name/patterns that
@@ -17,7 +17,7 @@ Watches can either be exact matches or use PCRE patterns
 to match multiple function names.
 </p>
 
-<form class="form-stacked" action="{{ url('watch.save', {}, server) }}" method="post">
+<form class="form-stacked" action="{{ url('watch.save') }}" method="post">
 {% if watched|length %}
     <ul class="unstyled watch-list">
         {% for i, watch in watched %}
