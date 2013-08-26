@@ -286,7 +286,7 @@ class Xhgui_Profiles
 
     public function getServers()
     {
-        $cursor = $this->_collection->distinct('meta.SERVER.SERVER_NAME');
+        $cursor = $this->_collection->distinct('url_hosts');
 
         return array(
             'results' => $cursor,

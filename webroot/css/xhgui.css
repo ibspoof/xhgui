@@ -323,3 +323,8 @@ li.server_params {
    padding: 3px;
 
 }
+
+td.view_long_url {
+    max-width: 500px;
+    overflow-x: scroll;
+}
