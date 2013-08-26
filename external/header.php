@@ -45,6 +45,9 @@ function Xhgui_recordXHProfData()
     ignore_user_abort(true);
     flush();
 
+    $data['hostname']  = gethostname();
+    $data['url_host'] =  $_SERVER['SERVER_NAME'];
+
     $data['profile'] = xhprof_disable();
 
     if (!defined('XHGUI_ROOT_DIR')) {
