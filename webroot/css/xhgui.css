@@ -328,3 +328,7 @@ td.view_long_url {
     max-width: 500px;
     overflow-x: scroll;
 }
+
+li.nav-list-url {
+    overflow-x: scroll;
+}
