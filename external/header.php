@@ -11,7 +11,6 @@
  * auto_prepend_file directive http://php.net/manual/en/ini.core.php#ini.auto-prepend-file
  */
 
- 
 /* xhprof_enable()
  * See: http://php.net/manual/en/xhprof.constants.php
  *
@@ -45,8 +44,8 @@ function Xhgui_recordXHProfData()
     ignore_user_abort(true);
     flush();
 
-    $data['hostname']  = gethostname();
-    $data['url_host'] =  $_SERVER['SERVER_NAME'];
+    $data['hostname'] = gethostname();
+    $data['url_host'] = $_SERVER['SERVER_NAME'];
 
     $data['profile'] = xhprof_disable();
 
@@ -54,15 +53,34 @@ function Xhgui_recordXHProfData()
         require dirname(dirname(__FILE__)) . '/src/bootstrap.php';
     }
 
+    include XHGUI_ROOT_DIR . '/config/config.php';
+
     $data['meta'] = array(
-        'url' => $_SERVER['REQUEST_URI'],
-        'SERVER' => $_SERVER,
-        'get' => $_GET,
-        'env' => $_ENV,
-        'simple_url' => Xhgui_Util::simpleUrl($_SERVER['REQUEST_URI']),
-        'request_ts' => new MongoDate($_SERVER['REQUEST_TIME']),
+        'url'          => $_SERVER['REQUEST_URI'],
+        'SERVER'       => $_SERVER,
+        'get'          => $_GET,
+        'env'          => $_ENV,
+        'simple_url'   => Xhgui_Util::simpleUrl($_SERVER['REQUEST_URI']),
+        'request_ts'   => new MongoDate($_SERVER['REQUEST_TIME']),
         'request_date' => date('Y-m-d', $_SERVER['REQUEST_TIME']),
     );
+
+
+    $data['meta']['url'] = xHprofRemoveBlacklist($data['meta']['url']);
+    $data['meta']['SERVER']['QUERY_STRING'] = xHprofRemoveBlacklist($data['meta']['SERVER']['QUERY_STRING']);
+    $data['meta']['SERVER']['REQUEST_URI'] = '?' . xHprofRemoveBlacklist($data['meta']['SERVER']['QUERY_STRING']);
+
+    $data['meta']['simple_url'] = explode('?', $data['meta']['simple_url']);
+    if (count($data['meta']['simple_url']) > 1) {
+        $data['meta']['simple_url'] = $data['meta']['simple_url'][0] . '?' . xHprofRemoveBlacklist($data['meta']['simple_url'][1]);
+    }
+
+    $data['meta']['url'] = explode('?', urldecode($data['meta']['url']));
+    if (count($data['meta']['url']) > 1) {
+        $data['meta']['url'] = $data['meta']['url'][0] . '?' . xHprofRemoveBlacklist($data['meta']['url'][1]);
+    } else {
+        $data['meta']['url'] = $data['meta']['url'][0];
+    }
 
     try {
         $container = Xhgui_ServiceContainer::instance();
@@ -70,4 +88,30 @@ function Xhgui_recordXHProfData()
     } catch (Exception $e) {
         error_log('xhgui - ' . $e->getMessage());
     }
+}
+
+function xHprofRemoveBlacklist($input)
+{
+    $blacklist = Xhgui_Config::read('blacklisted');
+    if (empty($blacklist)) {
+        return $input;
+    }
+
+    if (!is_array($input)) {
+        parse_str($input, $replace);
+    } else {
+        $replace = $input;
+    }
+
+    foreach ($replace as $k => $v) {
+        if (in_array($k, $blacklist)) {
+            $replace[$k] = '';
+        }
+    }
+
+    if (is_array($input)) {
+        return $replace;
+    }
+
+    return http_build_query($replace);
 }

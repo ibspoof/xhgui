@@ -10,5 +10,6 @@ return array(
     'templates.path' => XHGUI_ROOT_DIR . '/src/templates',
     'date.format' => 'M jS H:i:s',
     'detail.count' => 6,
-    'page.limit' => 25
+    'page.limit' => 25,
+    'blacklisted' => array('secret', 'password')
 );
