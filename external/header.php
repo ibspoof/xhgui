@@ -58,7 +58,7 @@ function Xhgui_recordXHProfData()
     $data['meta'] = array(
         'url'          => $_SERVER['REQUEST_URI'],
         'SERVER'       => $_SERVER,
-        'get'          => $_GET,
+        'get'          => xHprofRemoveBlacklist($_GET),
         'env'          => $_ENV,
         'simple_url'   => Xhgui_Util::simpleUrl($_SERVER['REQUEST_URI']),
         'request_ts'   => new MongoDate($_SERVER['REQUEST_TIME']),
