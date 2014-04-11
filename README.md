@@ -3,7 +3,10 @@ xhgui
 
 A graphical interface for XHProf data built on MongoDB.
 
-This tool requires that [XHProf](http://pecl.php.net/package/xhprof) is installed, which is a PHP Extension that records and provides profiling data. XHGui (this tool) takes that information, saves it in MongoDB, and provides a convienent GUI for working with it.
+This tool requires that [XHProf](http://pecl.php.net/package/xhprof) is
+installed, which is a PHP Extension that records and provides profiling data.
+XHGui (this tool) takes that information, saves it in MongoDB, and provides
+a convienent GUI for working with it.
 
 
 System Requirements
@@ -12,6 +15,10 @@ System Requirements
  * [XHProf](http://pecl.php.net/package/xhprof) to actually profile the data
  * [MongoDB PHP](http://pecl.php.net/package/mongo) MongoDB PHP extension
  * [MongoDB](http://www.mongodb.org/) MongoDB Itself
+ * [mcrypt] (http://php.net/manual/en/book.mcrypt.php) PHP must be configured
+   with mcrypt (which is a dependency of Slim)
+ * [dom] (http://php.net/manual/en/book.dom.php) If you are running the tests
+   you'll need the DOM extension (which is a dependency of PHPUnit)
 
 
 Changes from original Xhgui
@@ -25,28 +32,33 @@ Changes from original Xhgui
 Installation
 ============
 
-Installing Xhgui requires 2 main steps. First is installing the `xhgui` front-end, and the second is profiling a web application/site.
+Installing Xhgui requires 2 main steps. First is installing the `xhgui`
+front-end, and the second is profiling a web application/site.
 
 
-Installing the xhgui ui
------------------------
+Installing Xhgui
+----------------
 
 * Clone or download `xhgui` from github.
-* You'll need to install `mongodb`, and `php-mongodb`, at least version 1.3.0 of the php extension is required.
+* You'll need to install `mongodb`, and `php-mongodb`, at least version 1.3.0
+  of the php extension is required.
 * Point your webserver to the `webroot` directory.
-* Set the permissions on the `cache` cache directory to allow the webserver to create files.
-  If you're lazy `0777` will work. Run
+* Set the permissions on the `cache` cache directory to allow the webserver to
+  create files.  If you're lazy `0777` will work. Run:
 
   ```
   chmod -R 0777 cache
   ```
 
-* If your mongodb setup requires a username + password, or isn't running on the default port + host.
-  You'll need to update `config/config.php` so that it can connect to mongod.
-* You may wish to add indexes (recommended but optional) to improve the performance, you'll need to do this by using mongo console
+* If your mongodb setup requires a username + password, or isn't running on the
+  default port + host.  You'll need to update `config/config.php` so that it
+  can connect to mongod.
+* You may wish to add indexes (recommended but optional) to improve the
+  performance, you'll need to do this by using mongo console
 
-  On your command prompt (irrespective of Windows or \*nix), open mongo shell using command 'mongo' and follow below  commands to add the index:
-  
+  On your command prompt (irrespective of Windows or \*nix), open mongo shell
+  using command 'mongo' and follow below  commands to add the index:
+
   ```
   $ mongo
   > use xhprof
@@ -58,7 +70,8 @@ Installing the xhgui ui
   ```
 
   After adding indexes, you may notice you can navigate across pages faster.
-* Run the install script. This will download composer and use it to install the dependencies for xhgui.
+* Run the install script. This will download composer and use it to install the
+  dependencies for xhgui.
 
     ```
     cd path/to/xhgui
@@ -66,6 +79,9 @@ Installing the xhgui ui
     ```
 
 * Setup your webserver. See below for how to setup the rewrite rules for nginx + apache.
+
+Configuration
+=============
 
 Configure webserver re-write rules
 ----------------------------------
@@ -85,36 +101,99 @@ For Apache you can do the following to enable URL rewriting:
 
 For nginx & fast-cgi you can the following snippet as a start:
 
-    ```
-    server {
-        listen   80;
-        server_name example.com;
+```
+server {
+    listen   80;
+    server_name example.com;
 
-        # root directive should be global
-        root   /var/www/example.com/public/xhgui/webroot/;
-        index  index.php;
+    # root directive should be global
+    root   /var/www/example.com/public/xhgui/webroot/;
+    index  index.php;
 
-        location / {
-            try_files $uri $uri/ /index.php?$uri&$args;
-        }
-
-        location ~ \.php$ {
-            try_files $uri =404;
-            include /etc/nginx/fastcgi_params;
-            fastcgi_pass    127.0.0.1:9000;
-            fastcgi_index   index.php;
-            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        }
+    location / {
+        try_files $uri $uri/ /index.php?$uri&$args;
     }
-    ```
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_pass    127.0.0.1:9000;
+        fastcgi_index   index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+```
+
+
+Configure Xhgui profiling rate
+-------------------------------
+
+After installing Xhgui you may want to do change how frequently you profile the
+host application. The `profiler.enable` configuration option allows you to
+provide a callback function that determines which requests are profiled. By
+default 1 in 100 requests are profiled. If for example you wanted to only profile requests
+in a certain URL path you could do the following:
+
+
+```php
+// In config/config.php
+return array(
+    // Other config
+    'profiler.enable' => function() {
+        $url = $_SERVER['REQUEST_URI'];
+        if (strpos($url, '/blog') === 0) {
+            return false;
+        }
+        return rand(0, 100) === 42;
+    }
+);
+```
+
+The above code would profile anything not in `/blog` 1 in 100 requests. Paths containing `/blog` would never
+be profiled. To profile *every* request you could do the following:
+
+```php
+// In config/config.php
+return array(
+    // Other config
+    'profiler.enable' => function() {
+        return true;
+    }
+);
+```
+
+
+Configure how 'simple' URLs are created
+---------------------------------------
+
+Xhgui generates 'simple' URLs for each profile collected. These simple URLs are used to generate
+the aggregate data used on the URL view. Since different applications have different requirements
+for how URLs map to logical blocks of code, a configuration option allows you to provide custom
+logic to generate the simple URL. By default all numeric values in the query string are removed. To
+provide custom logic you define the `profiler.simple_url` configuration option:
+
+```php
+// In config/config.php
+return array(
+    // Other config
+    'profile.simple_url' => function($url) {
+        // Your code goes here.
+    }
+);
+```
+
+The URL argument is the `REQUEST_URI` or `argv` value.
 
 
 Profiling an application / site
--------------------------------
+===============================
 
-The simplest way to get an application profiled, is to use `external/header.php`.
-This file is designed to be combined with PHP's [auto_prepend_file](http://www.php.net/manual/en/ini.core.php#ini.auto-prepend-file) directive. This can be enabled system-wide through `php.ini`. Alternatively, you can enable
-`auto_prepend_file` per virtual host. With apache this would look like:
+The simplest way to get an application profiled, is to use
+`external/header.php`.  This file is designed to be combined with PHP's
+[auto_prepend_file](http://www.php.net/manual/en/ini.core.php#ini.auto-prepend-file)
+directive. This can be enabled system-wide through `php.ini`. Alternatively,
+you can enable `auto_prepend_file` per virtual host. With apache this would
+look like:
 
     <VirtualHost *:80>
         php_admin_value auto_prepend_file "/Users/markstory/Sites/xhgui/external/header.php"
@@ -131,15 +210,64 @@ With Nginx in fastcgi mode you could use:
         fastcgi_param PHP_VALUE "auto_prepend_file=/Users/markstory/Sites/xhgui/external/header.php";
      }
 
-Limiting Mongo Disk Usage 
+Saving & importing profiles
+---------------------------
+
+If your site cannot directly connect to your mongodb instance, you can choose
+to save your data on a temporary file for a later import to xhgui's mongo
+database.  Change the `save.handler` setting to `file` and define your file's
+path with `save.handler.filename`.  To import a file inside mongodb use the
+`external/import.php`. Be aware of file locking. Depending on your workload, 
+you may need to change the `save.handler.filename` file path to avoid file locking
+
+
+```
+php external/import.php -f /path/to/file
+```
+
+Be careful, importing the same file twice will load twice the run datas inside
+mongo, resulting with duplicate profiles
+
+
+Limiting Mongo Disk Usage
 -------------------------
 
-Disk usage can grow quickly, especially when profiling applications with large code bases, or that utilize larger frameworks. One technique to keep the growth in check is to have Mongo automatically delete profiling documents once they reach a certain age. Decide on a maximum profile document age in seconds, you may wish to choose a lower value in development (where you profile everything), than production (where you profile only a selection of documents). The following command instructs Mongo to delete documents over 5 days (432000 seconds) old.
+Disk usage can grow quickly, especially when profiling applications with large
+code bases, or that utilize larger frameworks. One technique to keep the growth
+in check is to have Mongo automatically delete profiling documents once they
+reach a certain age. Decide on a maximum profile document age in seconds, you
+may wish to choose a lower value in development (where you profile everything),
+than production (where you profile only a selection of documents). The
+following command instructs Mongo to delete documents over 5 days (432000
+seconds) old.
 
       $ mongo
       > use xhprof
       > db.results.ensureIndex( { "meta.request_ts" : 1 }, { expireAfterSeconds : 432000 } )
 
+Waterfall Display
+-----------------
+
+The goal of the waterfall display is to recognize that concurrent requests can
+affect each other. Concurrent DB requests (or other resources), CPU intensive
+activies, or even locks on session files can become relevant. With an Ajax
+heavy applicaitons understanding the page build is far more complex than
+a single load, hopefully the waterfall can help. Remember: If you're only
+profiling a sample of requests the waterfall fills you with impolite lies. 
+
+Some Notes:
+
+ * There should probably be more indexes on MongoDB for this to be performant
+ * It introduces storage of a new request_ts_micro value, as second level
+   granularity doesn't work well with waterfalls
+ * Still very much in alpha
+ * Feedback and pull requests welcome :)
+
+Releases/Changelog
+==================
+
+See the [releases](https://github.com/preinheimer/xhgui/releases) for changelogs,
+and release information.
 
 License
 =======

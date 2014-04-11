@@ -1,29 +1,38 @@
 <?php
 
-class Xhgui_Controller_Custom
+class Xhgui_Controller_Custom extends Xhgui_Controller
 {
     protected $_app;
     protected $_profiles;
+	protected $_server;
 
-    public function __construct($app, $profiles)
+    public function __construct($app, $profiles, $server=null)
     {
         $this->_app = $app;
         $this->_profiles = $profiles;
+		$this->_server = $server;
     }
 
-    public function get($server)
+    public function get()
     {
-        $this->_app->render('custom/create.twig', array(
-            'server' => $server
-        ));
+        $this->_template('custom/create.twig');
+		$this->set(array(
+			'server' => $this->_server
+		));
     }
 
-    public function help($server)
+    public function help()
     {
-        $res = $this->_profiles->latest();
-        $this->_app->render('custom/help.twig', array(
-            'data' => print_r($res[0]->toArray(), 1),
-            'server' => $server
+        $request = $this->_app->request();
+        if ($request->get('id')) {
+            $res = $this->_profiles->get($request->get('id'));
+        } else {
+            $res = $this->_profiles->latest();
+        }
+        $this->_template = 'custom/help.twig';
+        $this->set(array(
+            'data' => print_r($res->toArray(), 1),
+			'server' => $this->_server
         ));
     }
 

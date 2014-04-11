@@ -5,20 +5,7 @@ class ProfilesTest extends PHPUnit_Framework_TestCase
     {
         $di = Xhgui_ServiceContainer::instance();
         $this->profiles = $di['profiles'];
-        $this->_loadFixture('tests/fixtures/results.json');
-    }
-
-    protected function _loadFixture($file)
-    {
-        $contents = file_get_contents($file);
-        $data = json_decode($contents, true);
-        foreach ($data as $record) {
-            if (isset($record['meta']['request_time'])) {
-                $time = strtotime($record['meta']['request_time']);
-                $record['meta']['request_time'] = new MongoDate($time);
-            }
-            $this->profiles->insert($record);
-        }
+        loadFixture($this->profiles, 'tests/fixtures/results.json');
     }
 
     public function testPagination()
@@ -139,6 +126,13 @@ class ProfilesTest extends PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('pmu', $result[0]);
     }
 
+    public function testGetPercentileForUrlWithLimit()
+    {
+        $search = array('limit' => 'P1D');
+        $result = $this->profiles->getPercentileForUrl(20, '/', $search);
+        $this->assertCount(0, $result);
+    }
+
     public function testGetAllConditions()
     {
         $result = $this->profiles->getAll(array(
@@ -152,6 +146,13 @@ class ProfilesTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(25, $result['perPage']);
         $this->assertEquals(1, $result['totalPages']);
         $this->assertCount(2, $result['results']);
+    }
+
+    public function testLatest()
+    {
+        $result = $this->profiles->latest();
+        $this->assertInstanceOf('Xhgui_Profile', $result);
+        $this->assertEquals('2013-01-21', $result->getDate()->format('Y-m-d'));
     }
 
 }

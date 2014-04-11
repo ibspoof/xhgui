@@ -257,31 +257,38 @@ class ProfileTest extends PHPUnit_Framework_TestCase
         $profile = new Xhgui_Profile($this->_fixture[1]);
 
         $expected = array(
-            'totalTime' => 35,
+            'metric' => 'wt',
+            'total' => 35,
             'nodes' => array(
                 array(
                     'name' => 'main()',
                     'value' => 35,
+                    'callCount' => 1,
                 ),
                 array(
                     'name' => 'eat_burger()',
                     'value' => 25,
+                    'callCount' => 1,
                 ),
                 array(
                     'name' => 'chew_food()',
                     'value' => 22,
+                    'callCount' => 10,
                 ),
                 array(
                     'name' => 'strlen()',
-                    'value' => 1,
+                    'value' => 2,
+                    'callCount' => 2,
                 ),
                 array(
                     'name' => 'drink_beer()',
                     'value' => 14,
+                    'callCount' => 1,
                 ),
                 array(
                     'name' => 'lift_glass()',
                     'value' => 10,
+                    'callCount' => 5,
                 ),
             ),
             'links' => array(
@@ -326,27 +333,33 @@ class ProfileTest extends PHPUnit_Framework_TestCase
         $profile = new Xhgui_Profile($this->_fixture[2]);
 
         $expected = array(
-            'totalTime' => 50139,
+            'metric' => 'wt',
+            'total' => 50139,
             'nodes' => array(
                 array(
                     'name' => 'main()',
                     'value' => 50139,
+                    'callCount' => 1,
                 ),
                 array(
                     'name' => 'load_file()',
                     'value' => 10000,
+                    'callCount' => 1,
                 ),
                 array(
                     'name' => 'open()',
-                    'value' => 5000,
+                    'value' => 10000,
+                    'callCount' => 2,
                 ),
                 array(
                     'name' => 'strlen()',
                     'value' => 5000,
+                    'callCount' => 1,
                 ),
                 array(
                     'name' => 'parse_string()',
                     'value' => 10000,
+                    'callCount' => 1,
                 )
             ),
             'links' => array(

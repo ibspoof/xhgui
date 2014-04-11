@@ -3,7 +3,7 @@
 {% for k, v in data %}
     <dt>{{ k }}</dt>
     <dd class="text-wrap">
-        {{ v }}
+        {{ v|join(' ') }}
     </dd>
 {% else %}
     <dt>No {{ name }} data</dt>
@@ -24,6 +24,14 @@
 {% set params = {'direction': direction, 'sort': sort}|merge(search) %}
 
 <a class="sort-link {{ classname }}" href="{{ url(url, params) }}">{{ text }}</a>
+{% endmacro %}
+
+{% macro tip_link(text, len, url, params) %}
+<a {% if text|length > len %}class="tip"{% endif %}
+    href="{{ url(url, params) }}"
+    title="{{ text }}">
+    {{ text|truncate(len) }}
+</a>
 {% endmacro %}
 
 {% macro pagination(url, paging, search) %}

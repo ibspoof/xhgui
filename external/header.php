@@ -11,6 +11,7 @@
  * auto_prepend_file directive http://php.net/manual/en/ini.core.php#ini.auto-prepend-file
  */
 
+ 
 /* xhprof_enable()
  * See: http://php.net/manual/en/xhprof.constants.php
  *
@@ -29,18 +30,55 @@
  * Use bitwise operators to combine, so XHPROF_FLAGS_CPU | XHPROF_FLAGS_MEMORY to profile CPU and Memory
  *
  */
+
+// this file should not - under no circumstances - interfere with any other application
+if (!extension_loaded('xhprof')) {
+    error_log('xhgui - extension xhprof not loaded');
+    return;
+	
 // Obtain the answer to life, the universe, and your application one time out of a hundred 
 if (!empty($_COOKIE['XHPROF_ENABLED']) || rand(0, 100) === 42) {
     xhprof_enable(XHPROF_FLAGS_CPU | XHPROF_FLAGS_MEMORY);
     register_shutdown_function('Xhgui_recordXHProfData');
 }
 
-function Xhgui_recordXHProfData()
-{
+if (!extension_loaded('mongo')) {
+    error_log('xhgui - extension mongo not loaded');
+    return;
+}
+
+// Use the callbacks defined in the configuration file
+// to determine whether or not XHgui should enable profiling.
+//
+// Only load the config class so we don't pollute the host application's
+// autoloaders.
+$dir = dirname(__DIR__);
+require_once $dir . '/src/Xhgui/Config.php';
+Xhgui_Config::load($dir . '/config/config.default.php');
+if (file_exists($dir . '/config/config.php')) {
+    Xhgui_Config::load($dir . '/config/config.php');
+}
+unset($root);
+
+if (!Xhgui_Config::shouldRun()) {
+    return;
+}
+
+
+if (!isset($_SERVER['REQUEST_TIME_FLOAT'])) {
+    $_SERVER['REQUEST_TIME_FLOAT'] = microtime(true);
+}
+
+
+xhprof_enable(XHPROF_FLAGS_CPU | XHPROF_FLAGS_MEMORY);
+
+register_shutdown_function(function() {
     // ignore_user_abort(true) allows your PHP script to continue executing, even if the user has terminated their request.
     // Further Reading: http://blog.preinheimer.com/index.php?/archives/248-When-does-a-user-abort.html
     // flush() asks PHP to send any data remaining in the output buffers. This is normally done when the script completes, but
     // since we're delaying that a bit by dealing with the xhprof stuff, we'll do it now to avoid making the user wait.
+    $data['profile'] = xhprof_disable();
+
     ignore_user_abort(true);
     flush();
 
@@ -53,9 +91,24 @@ function Xhgui_recordXHProfData()
         require dirname(dirname(__FILE__)) . '/src/bootstrap.php';
     }
 
+    $uri = array_key_exists('REQUEST_URI', $_SERVER) ? $_SERVER['REQUEST_URI'] : null;
+    if (empty($uri) && isset($_SERVER['argv'])) {
+        $cmd = basename($_SERVER['argv'][0]);
+        $uri = $cmd . ' ' . implode(' ', array_slice($_SERVER['argv'], 1));
+    }
+
+    $time = array_key_exists('REQUEST_TIME', $_SERVER) ? $_SERVER['REQUEST_TIME'] : null;
     include XHGUI_ROOT_DIR . '/config/config.php';
 
     $data['meta'] = array(
+        'url' => $uri,
+        'SERVER' => $_SERVER,
+        'get' => $_GET,
+        'env' => $_ENV,
+        'simple_url' => Xhgui_Util::simpleUrl($uri),
+        'request_ts' => new MongoDate($time),
+        'request_ts_micro' => new MongoDate($_SERVER['REQUEST_TIME_FLOAT']),
+        'request_date' => date('Y-m-d', $time),
         'url'          => $_SERVER['REQUEST_URI'],
         'SERVER'       => $_SERVER,
         'get'          => xHprofRemoveBlacklist($_GET),
@@ -84,34 +137,8 @@ function Xhgui_recordXHProfData()
 
     try {
         $container = Xhgui_ServiceContainer::instance();
-        $container['profiles']->insert($data, array('w' => false));
+        $container['saver']->save($data);
     } catch (Exception $e) {
         error_log('xhgui - ' . $e->getMessage());
     }
-}
-
-function xHprofRemoveBlacklist($input)
-{
-    $blacklist = Xhgui_Config::read('blacklisted');
-    if (empty($blacklist)) {
-        return $input;
-    }
-
-    if (!is_array($input)) {
-        parse_str($input, $replace);
-    } else {
-        $replace = $input;
-    }
-
-    foreach ($replace as $k => $v) {
-        if (in_array($k, $blacklist)) {
-            $replace[$k] = '';
-        }
-    }
-
-    if (is_array($input)) {
-        return $replace;
-    }
-
-    return http_build_query($replace);
-}
+});

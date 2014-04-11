@@ -2,7 +2,17 @@
 /**
  * Routes for Xhgui
  */
-$app->error(function (Exception $e) use ($app) {
+$app->error(function (Exception $e) use ($di, $app) {
+    $view = $di['view'];
+    $view->parserOptions['cache'] = false;
+    $view->parserExtensions = array(
+        new Xhgui_Twig_Extension($app)
+    );
+
+    // Remove the controller so we don't render it.
+    unset($app->controller);
+
+    $app->view($view);
     $app->render('error/view.twig', array(
         'message' => $e->getMessage(),
         'stack_trace' => $e->getTraceAsString(),
@@ -10,54 +20,74 @@ $app->error(function (Exception $e) use ($app) {
 });
 
 // Profile Runs routes
-$app->get('/', function () use ($di) {
-    $di['runController']->index();
+$app->get('/', function () use ($di, $app) {
+    $app->controller = $di['runController'];
+    $app->controller->index();
 })->name('home');
 
-$app->get('/:server', function ($server) use ($di) {
-    $di['runController']->server($server);
-})->name('server');
-
-$app->get('/:server/run/view', function ($server) use ($di) {
-    $di['runController']->view($server);
+$app->get('/run/view', function () use ($di, $app) {
+    $app->controller = $di['runController'];
+    $app->controller->view();
 })->name('run.view');
 
-$app->get('/:server/url/view', function ($server) use ($di) {
-    $di['runController']->url($server);
+$app->get('/url/view', function () use ($di, $app) {
+    $app->controller = $di['runController'];
+    $app->controller->url();
 })->name('url.view');
 
-$app->get('/:server/run/compare', function ($server) use ($di) {
-    $di['runController']->compare($server);
+$app->get('/run/compare', function () use ($di, $app) {
+    $app->controller = $di['runController'];
+    $app->controller->compare();
 })->name('run.compare');
 
-$app->get('/:server/run/symbol', function ($server) use ($di) {
-    $di['runController']->symbol($server);
+$app->get('/run/symbol', function () use ($di, $app) {
+    $app->controller = $di['runController'];
+    $app->controller->symbol();
 })->name('run.symbol');
 
-$app->get('/:server/run/callgraph', function ($server) use ($di) {
-    $di['runController']->callgraph($server);
+$app->get('/run/callgraph', function () use ($di, $app) {
+    $app->controller = $di['runController'];
+    $app->controller->callgraph();
 })->name('run.callgraph');
 
+$app->get('/run/callgraph/data', function () use ($di, $app) {
+    $di['runController']->callgraphData();
+})->name('run.callgraph.data');
 
 // Watch function routes.
-$app->get('/:server/watch', function ($server) use ($di) {
-    $di['watchController']->get($server);
+$app->get('/watch', function () use ($di, $app) {
+    $app->controller = $di['watchController'];
+    $app->controller->get();
 })->name('watch.list');
 
-$app->post('/:server/watch', function ($server) use ($di) {
-    $di['watchController']->post($server);
+$app->post('/watch', function () use ($di) {
+    $di['watchController']->post();
 })->name('watch.save');
 
 
 // Custom report routes.
-$app->get('/:server/custom', function ($server) use ($di) {
-    $di['customController']->get($server);
+$app->get('/custom', function () use ($di, $app) {
+    $app->controller = $di['customController'];
+    $app->controller->get();
 })->name('custom.view');
 
-$app->post('/:server/custom/query', function ($server) use ($di) {
-    $di['customController']->query($server);
+$app->get('/custom/help', function () use ($di, $app) {
+    $app->controller = $di['customController'];
+    $app->controller->help();
+})->name('custom.help');
+
+$app->post('/custom/query', function () use ($di) {
+    $di['customController']->query();
 })->name('custom.query');
 
-$app->get('/:server/custom/help', function ($server) use ($di) {
-    $di['customController']->help($server);
-})->name('custom.help');
+
+// Waterfall routes
+$app->get('/waterfall', function () use ($di, $app) {
+    $app->controller = $di['waterfallController'];
+    $app->controller->index();
+})->name('waterfall.list');
+
+$app->get('/waterfall/data', function () use ($di) {
+    $di['waterfallController']->query();
+})->name('waterfall.data');
+

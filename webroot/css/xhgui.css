@@ -98,7 +98,7 @@ h1, h2, h3, h4, h5, h6,
  * Search bar/box
  */
 .searchbar {
-    margin: 10px;
+    margin: 10px 0;
     padding: 10px;
     background: -webkit-linear-gradient(rgb(247, 247, 247), rgb(240, 240, 240));
     background: -moz-linear-gradient(rgb(247, 247, 247), rgb(240, 240, 240));
@@ -163,8 +163,6 @@ thead .sort-link {
 thead .sort-link:hover {
     color: #59bdd2;
 }
-
-
 th.right,
 td.right {
     text-align: right;
@@ -202,6 +200,12 @@ tr .no-results {
 }
 
 
+.tooltip-inner {
+    max-width: 400px;
+    word-wrap: break-word;
+}
+
+
 /**
  * Watch lists
  */
@@ -217,10 +221,11 @@ tr .no-results {
 /**
  * Chart styles
  */
+.relative-box,
 .chart-container {
     position: relative;
 }
-.chart-container .popover {
+.popover {
     min-width: 125px;
     width: auto;
 }
@@ -246,6 +251,18 @@ tr .no-results {
 }
 
 /**
+ * Popover styles.
+ */
+.popover h5 {
+    font-weight: bold;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.popover h5:first-child {
+    margin-top: 0;
+}
+
+
+/**
  * Call graph chart
  */
 .callgraph .node {
@@ -264,7 +281,7 @@ tr .no-results {
     stroke-width: 1.5px;
 }
 .callgraph .link.active {
-	stroke: #000;
+    stroke: #000;
 }
 .callgraph #arrowhead {
     fill: #bbb;
@@ -272,10 +289,37 @@ tr .no-results {
 .callgraph #arrowhead-active {
     fill: #000;
 }
-.callgraph .node text {
+.callgraph text {
+    font-size: 11px;
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
     text-anchor: middle;
     vertical-align: middle;
+}
+#metric-popover {
+    left: auto;
+    width: 250px;
+}
+
+/**
+ * Waterfall chart
+ */
+.waterfall .axis {
+    shape-rendering: crispEdges;
+}
+.waterfall .x.axis line {
+    stroke: #ccc;
+}
+.waterfall .x.axis .minor {
+    stroke-opacity: .5;
+}
+.waterfall .x.axis path {
+    display: none;
+}
+.waterfall .bar {
+    fill: #b63c71;
+}
+.waterfall text {
+    color: black;
 }
 
 /**

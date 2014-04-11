@@ -17,7 +17,7 @@ class Xhgui_ServiceContainer extends Pimple
 
     public function __construct()
     {
-        $this['config'] = include XHGUI_ROOT_DIR . '/config/config.php';
+        $this['config'] = Xhgui_Config::all();
         $this->_slimApp();
         $this->_services();
         $this->_controllers();
@@ -26,14 +26,7 @@ class Xhgui_ServiceContainer extends Pimple
     // Create the Slim app.
     protected function _slimApp()
     {
-        $this['app'] = $this->share(function ($c) {
-            $app = new Slim($c['config']);
-
-            // Enable cookie based sessions
-            $app->add(new SessionCookie(array(
-                'httponly' => true,
-            )));
-
+        $this['view'] = function () {
             // Configure Twig view for slim
             $view = new Twig();
             $view->parserOptions = array(
@@ -43,6 +36,21 @@ class Xhgui_ServiceContainer extends Pimple
                 'strict_variables' => false,
                 'autoescape' => true
             );
+            return $view;
+        };
+
+        $this['app'] = $this->share(function ($c) {
+            $app = new Slim($c['config']);
+
+            // Enable cookie based sessions
+            $app->add(new SessionCookie(array(
+                'httponly' => true,
+            )));
+
+            // Add renderer.
+            $app->add(new Xhgui_Middleware_Render());
+
+            $view = $c['view'];
             $view->parserExtensions = array(
                 new Xhgui_Twig_Extension($app)
             );
@@ -59,7 +67,12 @@ class Xhgui_ServiceContainer extends Pimple
     {
         $this['db'] = $this->share(function ($c) {
             $config = $c['config'];
-            $mongo = new MongoClient($config['db.host']);
+            if (empty($config['db.options'])) {
+                $config['db.options'] = array();
+            }
+            $mongo = new MongoClient($config['db.host'], $config['db.options']);
+            $mongo->$config['db.db']->results->findOne();
+
             return $mongo->{$config['db.db']};
         });
 
@@ -69,6 +82,25 @@ class Xhgui_ServiceContainer extends Pimple
 
         $this['profiles'] = function ($c) {
             return new Xhgui_Profiles($c['db']);
+        };
+
+        $this['saver'] = function($c) {
+            $config = $c['config'];
+            switch ($config['save.handler']) {
+                case 'mongodb':
+                    return $c['saverMongo'];
+                    break;
+                case 'file':
+                    return new Xhgui_Saver_File($config['save.handler.filename']);
+                    break;
+                default:
+                    return $c['saverMongo'];
+                    break;
+            }
+        };
+
+        $this['saverMongo'] = function($c) {
+            return new Xhgui_Saver_Mongo($c['profiles']);
         };
     }
 
@@ -87,6 +119,10 @@ class Xhgui_ServiceContainer extends Pimple
 
         $this['customController'] = function ($c) {
             return new Xhgui_Controller_Custom($c['app'], $c['profiles']);
+        };
+
+        $this['waterfallController'] = function ($c) {
+            return new Xhgui_Controller_Waterfall($c['app'], $c['profiles']);
         };
     }
 

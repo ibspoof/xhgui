@@ -1,5 +1,22 @@
 window.Xhgui = {};
 
+Xhgui.metricName = function (metric) {
+    var map = {
+        pmu: "Peak Memory Use",
+        mu: "Memory Use",
+        cpu: "CPU time",
+        wt: "Wall time",
+        epmu: "Exclusive peak memory use",
+        emu: "Exclusive memory use",
+        ecpu: "Exclusive CPU",
+        ewt: "Exclusive wall time"
+    };
+    if (!map[metric]) {
+        return "Unknown";
+    }
+    return map[metric];
+};
+
 /**
  * Color generator for graphs.
  */
@@ -22,7 +39,12 @@ Xhgui.colors = function () {
  * @param Date date The date to format.
  * @return String Formatted date string.
  */
-Xhgui.formatDate = d3.time.format('%Y-%m-%d');
+Xhgui.formatDate = d3.time.format('%y-%m-%d %H:%M:%S');
+
+/**
+ * Dynamic date/time format based on date being shown
+ */
+Xhgui.dateTimeFormat;
 
 /**
  * Format a number to have thousand separators + decimal places.
@@ -108,13 +130,15 @@ Xhgui.tooltip = function (container, options) {
     }
 
     function createTooltip(container) {
-        var exists = container.select('.popover'),
-            popover, content;
+        var exists = container.select('#chart-popover'),
+            popover,
+            content;
 
         if (exists.empty()) {
             popover = container.append('div');
 
             popover.attr('class', 'popover top')
+                .attr('id', 'chart-popover')
                 .append('div').attr('class', 'arrow');
 
             content = popover.append('div')
@@ -130,7 +154,7 @@ Xhgui.tooltip = function (container, options) {
         return {frame: popover, content: content};
     }
 
-    var tooltip = createTooltip(container);
+    var tooltip = createTooltip(d3.select(document.body));
 
     function hide() {
         tooltip.frame.transition().style('opacity', 0);
@@ -157,10 +181,12 @@ Xhgui.tooltip = function (container, options) {
         tooltipWidth = parseInt(tooltip.frame.style('width'), 10);
         tooltipHeight = parseInt(tooltip.frame.style('height'), 10);
 
+        var containerNode = container.node();
+
         // Recalculate based on width/height of tooltip.
         // arrow is 10x10, so 7 & 5 are magic numbers
-        top = position.y - (tooltipHeight / 2) - 7;
-        left = position.x - (tooltipWidth / 2) + 5;
+        top = containerNode.offsetTop + position.y - (tooltipHeight / 2) - 7;
+        left = containerNode.offsetLeft + position.x - (tooltipWidth / 2) + 5;
 
         tooltip.frame.style({
             top: top + 'px',
@@ -354,17 +380,31 @@ Xhgui.linegraph = function (container, data, options) {
         if (d[options.xAxis] instanceof Date) {
             return d;
         }
-        var dateParts = d[options.xAxis].split('-');
-        var date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 0, 0, 0);
+
+        var col = d[options.xAxis];
+
+        // If it contains a colon it has a timestamp also
+        if (col.indexOf(":") != -1) {
+            var dateTimeParts = col.split(" ");
+            var dateParts = dateTimeParts[0].split('-');
+            var timeParts = dateTimeParts[1].split(':');
+            Xhgui.dateTimeFormat = '%H:%M:%S'
+        } else {
+            var dateParts = d[options.xAxis].split('-');
+            var timeParts = [0, 0, 0];
+            Xhgui.dateTimeFormat = '%y-%m-%d'
+        }
+
+        var date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], timeParts[0], timeParts[1], timeParts[2]);
         d[options.xAxis] = date;
         return d;
     });
-    
+
     var xRange = d3.extent(data, function (d) {
         return d[options.xAxis];
     });
 
-    var x = d3.time.scale()
+    var x = d3.scale.linear()
         .range([0, width])
         .domain(xRange);
 
@@ -384,23 +424,19 @@ Xhgui.linegraph = function (container, data, options) {
         .range([height, 0])
         .domain(yDomain);
 
-    // Default to daily scale.
-    var ticks = 1;
-    var tickScale = d3.time.days;
-
-    // If its a big date range show range in weeks
-    if (xSpread / (86400 * 1000) > 10) {
-        tickScale = d3.time.weeks;
-        ticks = 3;
-    }
+    var dateFormatter = d3.time.format(Xhgui.dateTimeFormat);
 
     var xAxis = d3.svg.axis()
         .scale(x)
-        .ticks(tickScale, ticks)
-        .tickFormat(d3.time.format('%Y-%m-%d'))
+        .tickFormat(function (d) {
+            return dateFormatter(new Date(d));
+        })
         .tickSize(9, 6, 0)
-        .tickSubdivide(ticks - 1)
         .orient('bottom');
+
+        // Only show as many ticks as will fit.
+        // Assume tick labels are 70px wide
+        xAxis.ticks(Math.abs(x.range()[1] - x.range()[0]) / 70);
 
     var yAxis = d3.svg.axis()
         .scale(y)
@@ -421,12 +457,13 @@ Xhgui.linegraph = function (container, data, options) {
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    // Add axis
+    // Add X-axis
     svg.append("g")
       .attr("class", "chart-axis x-axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xAxis);
 
+    // Add Y-axis
     svg.append("g")
       .attr("class", "chart-axis y-axis")
       .call(yAxis);

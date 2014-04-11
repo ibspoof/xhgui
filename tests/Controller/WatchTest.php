@@ -5,34 +5,33 @@ class Controller_WatchTest extends PHPUnit_Framework_TestCase
 {
     public function setUp()
     {
-       parent::setUp();
-       Environment::mock(array(
+        parent::setUp();
+        Environment::mock(array(
            'SCRIPT_NAME' => 'index.php',
            'PATH_INFO' => '/watch'
-       ));
-       $di = Xhgui_ServiceContainer::instance();
-       unset($di['app']);
+        ));
+        $di = Xhgui_ServiceContainer::instance();
+        unset($di['app']);
 
-       $di['app'] = $di->share(function ($c) {
-           return $this->getMock(
-               'Slim\Slim',
-               array('redirect', 'render', 'urlFor'),
-               array($c['config'])
-           );
-       });
-       $this->watches = $di['watchController'];
-       $this->app = $di['app'];
-       $this->watchFunctions = $di['watchFunctions'];
-       $this->watchFunctions->truncate();
+        $mock = $this->getMock(
+                'Slim\Slim',
+                array('redirect', 'render', 'urlFor'),
+                array($di['config'])
+            );
+        $di['app'] = $di->share(function ($c) use ($mock) {
+            return $mock;
+        });
+        $this->watches = $di['watchController'];
+        $this->app = $di['app'];
+        $this->watchFunctions = $di['watchFunctions'];
+        $this->watchFunctions->truncate();
     }
 
     public function testGet()
     {
-        $this->app->expects($this->once())
-            ->method('render')
-            ->with('watch/list.twig', array('watched' => array()));
-
         $this->watches->get();
+        $result = $this->watches->templateVars();
+        $this->assertEquals(array(), $result['watched']);
     }
 
     public function testPostAdd()

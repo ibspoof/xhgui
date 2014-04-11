@@ -126,6 +126,11 @@ class Xhgui_Profile
         return $this->_data['_id'];
     }
 
+    public function getDate()
+    {
+        return new DateTime('@' . $this->getMeta('SERVER.REQUEST_TIME'));
+    }
+
     /**
      * Get meta data about the profile. Read's a . split path
      * out of the meta data in a profile. For example `SERVER.REQUEST_TIME`
@@ -188,7 +193,7 @@ class Xhgui_Profile
         $matches = array();
         $keys = array_keys($this->_collapsed);
         foreach ($keys as $func) {
-            if (preg_match('/^' . $pattern . '$/', $func)) {
+            if (preg_match('`^' . $pattern . '$`', $func)) {
                 $data = $this->_collapsed[$func];
                 $data['function'] = $func;
                 $matches[] = $data;
@@ -318,7 +323,6 @@ class Xhgui_Profile
             $data['epmu'] = $data['pmu'];
         }
         unset($data);
-        $exclusiveKeys = array('ewt', 'emu', 'ecpu', 'ect', 'epmu');
 
         // Go over each method and remove each childs metrics
         // from the parent.
@@ -428,6 +432,25 @@ class Xhgui_Profile
     }
 
     /**
+     * Get the max value for any give metric.
+     *
+     * @param string $metric The metric to get a max value for.
+     */
+    protected function _maxValue($metric)
+    {
+        return array_reduce(
+            $this->_collapsed,
+            function($result, $item) use ($metric) {
+                if ($item[$metric] > $result) {
+                    return $item[$metric];
+                }
+                return $result;
+            },
+            0
+        );
+    }
+
+    /**
      * Return a structured array suitable for generating callgraph visualizations.
      *
      * Functions whose inclusive time is less than 2% of the total time will
@@ -435,13 +458,26 @@ class Xhgui_Profile
      *
      * @return array
      */
-    public function getCallgraph()
+    public function getCallgraph($metric = 'wt', $threshold = 0.01)
     {
-        $totalTime = $this->_collapsed['main()']['wt'];
+        $valid = array_merge($this->_keys, $this->_exclusiveKeys);
+        if (!in_array($metric, $valid)) {
+            throw new Exception("Unknown metric '$metric'. Cannot generate callgraph.");
+        }
+        $this->calculateExclusive();
+
+        // Non exclusive metrics are always main() because it is the root call scope.
+        if (in_array($metric, $this->_exclusiveKeys)) {
+            $main = $this->_maxValue($metric);
+        } else {
+            $main = $this->_collapsed['main()'][$metric];
+        }
+
         $this->_visited = $this->_nodes = $this->_links = array();
-        $this->_callgraphData(self::NO_PARENT, $totalTime);
+        $this->_callgraphData(self::NO_PARENT, $main, $metric, $threshold);
         $out = array(
-            'totalTime' => $totalTime,
+            'metric' => $metric,
+            'total' => $main,
             'nodes' => $this->_nodes,
             'links' => $this->_links
         );
@@ -449,7 +485,7 @@ class Xhgui_Profile
         return $out;
     }
 
-    protected function _callgraphData($parentName, $totalTime, $parentIndex = null)
+    protected function _callgraphData($parentName, $main, $metric, $threshold, $parentIndex = null)
     {
         // Leaves don't have children, and don't have links/nodes to add.
         if (!isset($this->_indexed[$parentName])) {
@@ -458,7 +494,8 @@ class Xhgui_Profile
 
         $children = $this->_indexed[$parentName];
         foreach ($children as $childName => $metrics) {
-            if ($metrics['wt'] / $totalTime <= 0.01) {
+            $metrics = $this->_collapsed[$childName];
+            if ($metrics[$metric] / $main <= $threshold) {
                 continue;
             }
             $revisit = false;
@@ -471,7 +508,8 @@ class Xhgui_Profile
 
                 $this->_nodes[] = array(
                     'name' => $childName,
-                    'value' => $metrics['wt'],
+                    'callCount' => $metrics['ct'],
+                    'value' => $metrics[$metric],
                 );
             } else {
                 $revisit = true;
@@ -489,7 +527,7 @@ class Xhgui_Profile
             // If the current function has more children,
             // walk that call subgraph.
             if (isset($this->_indexed[$childName]) && !$revisit) {
-                $this->_callgraphData($childName, $totalTime, $index);
+                $this->_callgraphData($childName, $main, $metric, $threshold, $index);
             }
         }
     }

@@ -14,8 +14,8 @@
     <div class="sidebar-nav">
         <ul class="nav nav-list">
             <li class="nav-header">This Run</li>
-            <li class='nav-list-url'><strong>URL</strong> <a href="{{ url('url.view', {'url': result.meta('url')|simple_url }) }}">{{ result.meta('url') }}</a></li>
-            <li><strong>Time</strong> {{ result.meta('SERVER.REQUEST_TIME')|date(date_format) }}</li>
+            <li><strong>URL</strong> <a href="{{ url('url.view', {'url': result.meta('url')|simple_url }) }}">{{ result.meta('url') }}</a></li>
+            <li><strong>Time</strong> {{ result.date|date(date_format) }}</li>
             <li><strong>ID</strong> <a href="{{ url('custom.help', {id: result.id|trim }) }}">{{ result.id }}</a></li>
             <li><strong>Wall Time</strong> {{ result.get('main()', 'wt')|as_time }}</li>
             <li><strong>CPU Time</strong> {{ result.get('main()', 'cpu')|as_time }}</li>
@@ -26,7 +26,10 @@
             <li>{{ helpers.property_list('GET', result.meta('get')) }}</li>
 
             <li class="nav-header">SERVER</li>
-            <li class="server_params">{{ helpers.property_list('SERVER', result.meta('SERVER')) }}
+            <li>{{ helpers.property_list('SERVER', result.meta('SERVER')) }}
+
+            <li class="nav-header">Waterfall</li>
+            <li><strong>By IP</strong> <a href="{{ url('waterfall.list', {'remote_addr': result.meta.SERVER.REMOTE_ADDR, 'request_start': result.meta.SERVER.REQUEST_TIME - 5, 'request_end': result.meta.SERVER.REQUEST_TIME + 15}) }}">{{ result.meta.SERVER.REMOTE_ADDR }}</a></li>
 
         </ul>
     </div><!--/.well -->
@@ -57,7 +60,14 @@
         <tbody>
         {% for value in watches %}
         <tr>
-            <td>{{ value.function }}</td>
+            <td>
+            {{ helpers.tip_link(
+                value.function,
+                65,
+                'run.symbol',
+                {'id': result.id|trim, 'symbol': value.function}
+            ) }}
+            </td>
             <td class="right">{{ value.ct }}</td>
             <td class="right">{{ value.ewt|as_time }}</td>
             <td class="right">{{ value.emu|as_bytes }}</td>
@@ -119,7 +129,12 @@
     {% for key, value in profile %}
     <tr>
         <td class="text">
-            <a href="{{ url('run.symbol', {'id': result.id|trim, 'symbol': key}) }}">{{ key }}</a>
+            {{ helpers.tip_link(
+                key,
+                65,
+                'run.symbol',
+                {'id': result.id|trim, 'symbol': key}
+            ) }}
         </td>
         <td class="right">{{ value.ct }}</td>
         <td class="right">{{ value.ewt|as_time }}</td>

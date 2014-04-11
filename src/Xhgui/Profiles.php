@@ -32,7 +32,8 @@ class Xhgui_Profiles
         $cursor = $this->_collection->find($conditions)
             ->sort(array('meta.request_date' => -1))
             ->limit(1);
-        return $this->_wrap($cursor);
+        $result = $cursor->getNext();
+        return $this->_wrap($result);
     }
 
     public function query($conditions, $fields = null)
@@ -44,7 +45,7 @@ class Xhgui_Profiles
      * Get a single profile run by id.
      *
      * @param string $id The id of the profile to get.
-     * @return MongoCursor
+     * @return Xhgui_Profile
      */
     public function get($id)
     {
@@ -77,8 +78,9 @@ class Xhgui_Profiles
     {
         $opts = $this->_mapper->convert($options);
 
-        $totalRows = $this->_collection->find($opts['conditions'])
-            ->count();
+        $totalRows = $this->_collection->find(
+            $opts['conditions'],
+            array('_id' => 1))->count();
 
         $totalPages = max(ceil($totalRows / $opts['perPage']), 1);
         $page = 1;
@@ -86,10 +88,26 @@ class Xhgui_Profiles
             $page = min(max($options['page'], 1), $totalPages);
         }
 
-        $cursor = $this->_collection->find($opts['conditions'])
-            ->sort($opts['sort'])
-            ->skip(($page - 1) * $opts['perPage'])
-            ->limit($opts['perPage']);
+        $projection = false;
+        if (isset($options['projection'])) {
+            if ($options['projection'] === true) {
+                $projection = array('meta' => 1, 'profile.main()' => 1);
+            } else {
+                $projection = $options['projection'];
+            }
+        }
+
+        if ($projection === false) {
+            $cursor = $this->_collection->find($opts['conditions'])
+                ->sort($opts['sort'])
+                ->skip(($page - 1) * $opts['perPage'])
+                ->limit($opts['perPage']);
+        } else {
+            $cursor = $this->_collection->find($opts['conditions'], $projection)
+                ->sort($opts['sort'])
+                ->skip(($page - 1) * $opts['perPage'])
+                ->limit($opts['perPage']);
+        }
 
         return array(
             'results' => $this->_wrap($cursor),
@@ -114,18 +132,21 @@ class Xhgui_Profiles
      */
     public function getPercentileForUrl($percentile, $url, $search = array())
     {
-        $match = array('meta.simple_url' => $url);
-        if (isset($search['date_start'])) {
-            $match['meta.request_date']['$gte'] = (string)$search['date_start'];
+        $result = $this->_mapper->convert(array(
+            'conditions' => $search + array('simple_url' => $url)
+        ));
+        $match = $result['conditions'];
+
+        $col = '$meta.request_date';
+        if (!empty($search['limit']) && $search['limit'][0] == "P") {
+            $col = '$meta.request_ts';
         }
-        if (isset($search['date_end'])) {
-            $match['meta.request_date']['$lte'] = (string)$search['date_end'];
-        }
+
         $results = $this->_collection->aggregate(array(
             array('$match' => $match),
             array(
                 '$project' => array(
-                    'date' => '$meta.request_date',
+                    'date' => $col,
                     'profile.main()' => 1
                 )
             ),
@@ -168,7 +189,7 @@ class Xhgui_Profiles
             'pmu_times' => 'pmu'
         );
         foreach ($results['result'] as &$result) {
-            $result['date'] = $result['_id'];
+            $result['date'] = ($result['_id'] instanceof MongoDate) ? date('Y-m-d H:i:s', $result['_id']->sec) : $result['_id'];
             unset($result['_id']);
             $index = max(round($result['raw_index']) - 1, 0);
             foreach ($keys as $key => $out) {
@@ -272,6 +293,10 @@ class Xhgui_Profiles
      */
     protected function _wrap($data)
     {
+        if ($data === null) {
+            throw new Exception('No profile data found.');
+        }
+
         if (is_array($data)) {
             return new Xhgui_Profile($data);
         }

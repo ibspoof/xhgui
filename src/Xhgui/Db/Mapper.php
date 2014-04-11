@@ -44,17 +44,29 @@ class Xhgui_Db_Mapper
      */
     protected function _conditions($search)
     {
+        if (!empty($search['limit_custom']) && $search['limit_custom'][0] == "P") {
+            $search['limit'] = $search['limit_custom'];
+        }
+        $hasLimit = (!empty($search['limit']) && $search['limit'] != -1);
+
         $conditions = array();
-        if (isset($search['date_start'])) {
+        if (!empty($search['date_start']) && !$hasLimit) {
             $conditions['meta.request_date']['$gte'] = (string)$search['date_start'];
         }
-        if (isset($search['date_end'])) {
+        if (!empty($search['date_end']) && !$hasLimit) {
             $conditions['meta.request_date']['$lte'] = (string)$search['date_end'];
         }
         if (isset($search['simple_url'])) {
             $conditions['meta.simple_url'] = (string)$search['simple_url'];
         }
-        if (isset($search['remote_addr'])) {
+        if (!empty($search['request_start'])) {
+            $conditions['meta.SERVER.REQUEST_TIME']['$gte'] = $this->_convertDate($search['request_start']);
+        }
+        if (!empty($search['request_end'])) {
+            $conditions['meta.SERVER.REQUEST_TIME']['$lte'] = $this->_convertDate($search['request_end']);
+        }
+
+        if (!empty($search['remote_addr'])) {
             $conditions['meta.SERVER.REMOTE_ADDR'] = (string)$search['remote_addr'];
         }
         if (isset($search['cookie'])) {
@@ -62,6 +74,17 @@ class Xhgui_Db_Mapper
         }
         if (isset($search['server'])) {
             $conditions['meta.SERVER.SERVER_NAME'] = (string)$search['server'];
+        }
+
+        if ($hasLimit && $search['limit'][0] == "P") {
+            $date = new DateTime();
+            try {
+                $date->sub(new DateInterval($search['limit']));
+                $conditions['meta.request_ts']['$gte'] = new MongoDate($date->getTimestamp());
+            } catch (\Exception $e) {
+                // Match a day in the future so we match nothing, as it's likely an invalid format
+                $conditions['meta.request_ts']['$gte'] = new MongoDate(time() + 86400);
+            }
         }
 
         if (isset($search['url'])) {
@@ -72,7 +95,20 @@ class Xhgui_Db_Mapper
                 '$options' => 'i',
             );
         }
+
         return $conditions;
+    }
+
+    protected function _convertDate($dateString)
+    {
+        if (is_numeric($dateString)) {
+            return (float) $dateString;
+        }
+        $date = DateTime::createFromFormat('Y-m-d H:i:s', $dateString);
+        if (!$date) {
+            return $date;
+        }
+        return $date->getTimestamp();
     }
 
     protected function _direction($options)
