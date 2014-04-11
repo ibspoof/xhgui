@@ -11,10 +11,17 @@ class Xhgui_Controller_Waterfall extends Xhgui_Controller
         $this->_profiles = $profiles;
     }
 
+
+
+	public function setServer($server)
+	{
+		$this->_server = $server;
+	}
+
     public function index()
     {
         $request = $this->_app->request();
-        $search = array();
+		$search['server'] = $this->_server;
         $keys = array("remote_addr", 'request_start', 'request_end');
         foreach ($keys as $key) {
             if ($request->get($key)) {
@@ -26,6 +33,7 @@ class Xhgui_Controller_Waterfall extends Xhgui_Controller
             'direction' => 'asc',
             'conditions' => $search,
             'projection' => true
+
         ));
 
         $paging = array(

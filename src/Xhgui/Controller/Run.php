@@ -1,251 +1,309 @@
 <?php
 
-class Xhgui_Controller_Run extends Xhgui_Controller
-{
-    public function __construct($app, $profiles, $watches)
-    {
-        $this->_app = $app;
-        $this->_profiles = $profiles;
-        $this->_watches = $watches;
-    }
 
-    public function index()
-    {
-        $request = $this->_app->request();
+class Xhgui_Controller_Run extends Xhgui_Controller {
 
-        $search = array();
-        $keys = array('date_start', 'date_end', 'url');
-        foreach ($keys as $key) {
-            if ($request->get($key)) {
-                $search[$key] = $request->get($key);
-            }
-        }
-        $sort = $request->get('sort');
+	public function __construct($app, $profiles, $watches)
+	{
+		$this->_app = $app;
+		$this->_profiles = $profiles;
+		$this->_watches = $watches;
 
-        $result = $this->_profiles->getAll(array(
-            'sort' => $sort,
-            'page' => $request->get('page'),
-            'direction' => $request->get('direction'),
-            'perPage' => $this->_app->config('page.limit'),
-            'conditions' => $search,
-            'projection' => true,
-        ));
+	}
 
-        $title = 'Recent runs';
-        $titleMap = array(
-            'wt' => 'Longest wall time',
-            'cpu' => 'Most CPU time',
-            'mu' => 'Highest memory use',
-        );
-        if (isset($titleMap[$sort])) {
-            $title = $titleMap[$sort];
-        }
 
-        $paging = array(
-            'total_pages' => $result['totalPages'],
-            'page' => $result['page'],
-            'sort' => $sort,
-            'direction' => $result['direction']
-        );
+	public function setServer($server)
+	{
+		$this->_server = $server;
+	}
 
-        $this->_template = 'runs/list.twig';
-        $this->set(array(
-            'paging' => $paging,
-            'base_url' => 'home',
-            'runs' => $result['results'],
-            'date_format' => $this->_app->config('date.format'),
-            'search' => $search,
-            'has_search' => strlen(implode('', $search)) > 0,
-            'title' => $title
-        ));
-    }
+	public function index()
+	{
+		$request = $this->_app->request();
 
-    public function view()
-    {
-        $request = $this->_app->request();
-        $detailCount = $this->_app->config('detail.count');
-        $result = $this->_profiles->get($request->get('id'));
+		$search = array();
+		$keys = array('date_start', 'date_end', 'url');
+		foreach ($keys as $key) {
+			if ($request->get($key)) {
+				$search[$key] = $request->get($key);
+			}
+		}
+		$sort = $request->get('sort');
 
-        $result->calculateExclusive();
+		$result = $this->_profiles->getServers();
 
-        // Exclusive wall time graph
-        $timeChart = $result->extractDimension('ewt', $detailCount);
+		$title = 'Select Server';
 
-        // Memory Block
-        $memoryChart = $result->extractDimension('emu', $detailCount);
+		$this->_template = 'home/servers.twig';
+		$this->set(array(
+				'base_url' => 'home',
+				'servers'  => $result['results'],
+				'title'    => $title,
+				'hideMenu' => true
+		));
+	}
 
-        // Watched Functions Block
-        $watchedFunctions = array();
-        foreach ($this->_watches->getAll() as $watch) {
-            $matches = $result->getWatched($watch['name']);
-            if ($matches) {
-                $watchedFunctions = array_merge($watchedFunctions, $matches);
-            }
-        }
 
-        $profile = $result->sort('ewt', $result->getProfile());
 
-        $this->_template = 'runs/view.twig';
-        $this->set(array(
-            'profile' => $profile,
-            'result' => $result,
-            'wall_time' => $timeChart,
-            'memory' => $memoryChart,
-            'watches' => $watchedFunctions,
-            'date_format' => $this->_app->config('date_format'),
-        ));
-    }
+	public function server()
+	{
+		$request = $this->_app->request();
 
-    public function url()
-    {
-        $request = $this->_app->request();
-        $pagination = array(
-            'sort' => $request->get('sort'),
-            'direction' => $request->get('direction'),
-            'page' => $request->get('page'),
-            'perPage' => $this->_app->config('page.limit'),
-        );
+		$search['server'] = $this->_server;
+		//$search['wt'] = "> 0";
+		$keys = array('date_start', 'date_end', 'url');
 
-        $search = array();
-        $keys = array('date_start', 'date_end', 'limit', 'limit_custom');
-        foreach ($keys as $key) {
-            $search[$key] = $request->get($key);
-        }
+		foreach ($keys as $key) {
+			if ($request->get($key)) {
+				$search[$key] = $request->get($key);
+			}
+		}
 
-        $runs = $this->_profiles->getForUrl(
-            $request->get('url'),
-            $pagination,
-            $search
-        );
+		$sort = $request->get('sort');
 
-        if (isset($search['limit_custom']) && strlen($search['limit_custom']) > 0 && $search['limit_custom'][0] == 'P') {
-            $search['limit'] = $search['limit_custom'];
-        }
+		$result = $this->_profiles->getAll(array(
+				'sort'       => $sort,
+				'page'       => $request->get('page'),
+				'direction'  => $request->get('direction'),
+				'perPage'    => $this->_app->config('page.limit'),
+				'conditions' => $search,
+				'projection' => true,
+		));
 
-        $chartData = $this->_profiles->getPercentileForUrl(
-            90,
-            $request->get('url'),
-            $search
-        );
+		$title = 'Recent runs';
+		$titleMap = array(
+				'wt'  => 'Longest wall time',
+				'cpu' => 'Most CPU time',
+				'mu'  => 'Highest memory use',
+		);
+		if (isset($titleMap[$sort])) {
+			$title = $titleMap[$sort];
+		}
 
-        $paging = array(
-            'total_pages' => $runs['totalPages'],
-            'sort' => $pagination['sort'],
-            'page' => $runs['page'],
-            'direction' => $runs['direction']
-        );
+		$paging = array(
+				'total_pages' => $result['totalPages'],
+				'page'        => $result['page'],
+				'sort'        => $sort,
+				'direction'   => $result['direction']
+		);
 
-        $this->_template = 'runs/url.twig';
-        $this->set(array(
-            'paging' => $paging,
-            'base_url' => 'url.view',
-            'runs' => $runs['results'],
-            'url' => $request->get('url'),
-            'chart_data' => $chartData,
-            'date_format' => $this->_app->config('date.format'),
-            'search' => array_merge($search, array('url' => $request->get('url'))),
-        ));
-    }
+		$this->_template = 'runs/list.twig';
+		$this->set(array(
+				'paging'      => $paging,
+				'base_url'    => 'home',
+				'runs'        => $result['results'],
+				'date_format' => $this->_app->config('date.format'),
+				'search'      => $search,
+				'has_search'  => strlen(implode('', $search)) > 0,
+				'title'       => $title,
+				'server'      => $this->_server,
+		));
+	}
 
-    public function compare()
-    {
-        $request = $this->_app->request();
 
-        $baseRun = $headRun = $candidates = $comparison = null;
-        $paging = array();
 
-        if ($request->get('base')) {
-            $baseRun = $this->_profiles->get($request->get('base'));
-        }
+	public function view()
+	{
+		$request = $this->_app->request();
+		$detailCount = $this->_app->config('detail.count');
+		$result = $this->_profiles->get($request->get('id'));
 
-        if ($baseRun && !$request->get('head')) {
-            $pagination = array(
-                'direction' => $request->get('direction'),
-                'sort' => $request->get('sort'),
-                'page' => $request->get('page'),
-                'perPage' => $this->_app->config('page.limit'),
-            );
-            $candidates = $this->_profiles->getForUrl(
-                $baseRun->getMeta('simple_url'),
-                $pagination
-            );
+		$result->calculateExclusive();
 
-            $paging = array(
-                'total_pages' => $candidates['totalPages'],
-                'sort' => $pagination['sort'],
-                'page' => $candidates['page'],
-                'direction' => $candidates['direction']
-            );
-        }
+		// Exclusive wall time graph
+		$timeChart = $result->extractDimension('ewt', $detailCount);
 
-        if ($request->get('head')) {
-            $headRun = $this->_profiles->get($request->get('head'));
-        }
+		// Memory Block
+		$memoryChart = $result->extractDimension('emu', $detailCount);
 
-        if ($baseRun && $headRun) {
-            $comparison = $baseRun->compare($headRun);
-        }
+		// Watched Functions Block
+		$watchedFunctions = array();
+		foreach ($this->_watches->getAll($this->_server) as $watch) {
+			$matches = $result->getWatched($watch['name']);
+			if ($matches) {
+				$watchedFunctions = array_merge($watchedFunctions, $matches);
+			}
+		}
 
-        $this->_template = 'runs/compare.twig';
-        $this->set(array(
-            'base_url' => 'run.compare',
-            'base_run' => $baseRun,
-            'head_run' => $headRun,
-            'candidates' => $candidates,
-            'url_params' => $request->get(),
-            'date_format' => $this->_app->config('date.format'),
-            'comparison' => $comparison,
-            'paging' => $paging,
-            'search' => array(
-                'base' => $request->get('base'),
-                'head' => $request->get('head'),
-            )
-        ));
-    }
+		$profile = $result->sort('ewt', $result->getProfile());
 
-    public function symbol()
-    {
-        $request = $this->_app->request();
-        $id = $request->get('id');
-        $symbol = $request->get('symbol');
+		$this->_template = 'runs/view.twig';
+		$this->set(array(
+				'profile'     => $profile,
+				'result'      => $result,
+				'wall_time'   => $timeChart,
+				'memory'      => $memoryChart,
+				'watches'     => $watchedFunctions,
+				'date_format' => $this->_app->config('date_format'),
+				'server'      => $this->_server
+		));
+	}
 
-        $profile = $this->_profiles->get($id);
-        $profile->calculateExclusive();
-        list($parents, $current, $children) = $profile->getRelatives($symbol);
 
-        $this->_template = 'runs/symbol-view.twig';
-        $this->set(array(
-            'symbol' => $symbol,
-            'id' => $id,
-            'parents' => $parents,
-            'current' => $current,
-            'children' => $children,
-        ));
-    }
 
-    public function callgraph()
-    {
-        $request = $this->_app->request();
-        $profile = $this->_profiles->get($request->get('id'));
+	public function url()
+	{
+		$request = $this->_app->request();
 
-        $this->_template = 'runs/callgraph.twig';
-        $this->set(array(
-            'profile' => $profile,
-            'date_format' => $this->_app->config('date_format'),
-        ));
-    }
+		$pagination = array(
+				'sort'      => $request->get('sort'),
+				'direction' => $request->get('direction'),
+				'page'      => $request->get('page'),
+				'perPage'   => $this->_app->config('page.limit'),
+		);
 
-    public function callgraphData()
-    {
-        $request = $this->_app->request();
-        $response = $this->_app->response();
-        $profile = $this->_profiles->get($request->get('id'));
-        $metric = $request->get('metric') ?: 'wt';
-        $threshold = (float)$request->get('threshold') ?: 0.01;
-        $callgraph = $profile->getCallgraph($metric, $threshold);
+		$search = array();
+		$keys = array('date_start', 'date_end', 'limit', 'limit_custom');
+		foreach ($keys as $key) {
+			$search[$key] = $request->get($key);
+		}
 
-        $response['Content-Type'] = 'application/json';
-        return $response->body(json_encode($callgraph));
-    }
+		$runs = $this->_profiles->getForUrl(
+				$request->get('url'),
+				$pagination,
+				$search
+		);
+
+		if (isset($search['limit_custom']) && strlen($search['limit_custom']) > 0 && $search['limit_custom'][0] == 'P') {
+			$search['limit'] = $search['limit_custom'];
+		}
+
+		$chartData = $this->_profiles->getPercentileForUrl(
+				90,
+				$request->get('url'),
+				$search
+		);
+
+		$paging = array(
+				'total_pages' => $runs['totalPages'],
+				'sort'        => $pagination['sort'],
+				'page'        => $runs['page'],
+				'direction'   => $runs['direction']
+		);
+
+		$this->_template = 'runs/url.twig';
+		$this->set(array(
+				'paging'      => $paging,
+				'base_url'    => 'url.view',
+				'runs'        => $runs['results'],
+				'url'         => $request->get('url'),
+				'chart_data'  => $chartData,
+				'date_format' => $this->_app->config('date.format'),
+				'search'      => array_merge($search, array('url' => $request->get('url'))),
+				'server'      => $this->_server
+		));
+	}
+
+
+
+	public function compare()
+	{
+		$request = $this->_app->request();
+
+		$baseRun = $headRun = $candidates = $comparison = null;
+		$paging = array();
+
+		if ($request->get('base')) {
+			$baseRun = $this->_profiles->get($request->get('base'));
+		}
+
+		if ($baseRun && !$request->get('head')) {
+			$pagination = array(
+					'direction' => $request->get('direction'),
+					'sort'      => $request->get('sort'),
+					'page'      => $request->get('page'),
+					'perPage'   => $this->_app->config('page.limit'),
+			);
+			$candidates = $this->_profiles->getForUrl(
+					$baseRun->getMeta('simple_url'),
+					$pagination
+			);
+
+			$paging = array(
+					'total_pages' => $candidates['totalPages'],
+					'sort'        => $pagination['sort'],
+					'page'        => $candidates['page'],
+					'direction'   => $candidates['direction']
+			);
+		}
+
+		if ($request->get('head')) {
+			$headRun = $this->_profiles->get($request->get('head'));
+		}
+
+		if ($baseRun && $headRun) {
+			$comparison = $baseRun->compare($headRun);
+		}
+
+		$this->_template = 'runs/compare.twig';
+		$this->set(array(
+				'base_url'    => 'run.compare',
+				'base_run'    => $baseRun,
+				'head_run'    => $headRun,
+				'candidates'  => $candidates,
+				'url_params'  => $request->get(),
+				'date_format' => $this->_app->config('date.format'),
+				'comparison'  => $comparison,
+				'paging'      => $paging,
+				'search'      => array(
+						'base'   => $request->get('base'),
+						'head'   => $request->get('head'),
+						'server' => $this->_server
+				)
+		));
+	}
+
+
+
+	public function symbol()
+	{
+		$request = $this->_app->request();
+		$id = $request->get('id');
+		$symbol = $request->get('symbol');
+
+		$profile = $this->_profiles->get($id);
+		$profile->calculateExclusive();
+		list($parents, $current, $children) = $profile->getRelatives($symbol);
+
+		$this->_template = 'runs/symbol-view.twig';
+		$this->set(array(
+				'symbol'   => $symbol,
+				'id'       => $id,
+				'parents'  => $parents,
+				'current'  => $current,
+				'children' => $children,
+				'server'   => $this->_server
+		));
+	}
+
+
+
+	public function callgraph()
+	{
+		$request = $this->_app->request();
+		$profile = $this->_profiles->get($request->get('id'));
+
+		$this->_template = 'runs/callgraph.twig';
+		$this->set(array(
+				'profile'     => $profile,
+				'date_format' => $this->_app->config('date_format'),
+				'server'      => $this->_server
+		));
+	}
+
+
+
+	public function callgraphData()
+	{
+		$request = $this->_app->request();
+		$response = $this->_app->response();
+		$profile = $this->_profiles->get($request->get('id'));
+		$metric = $request->get('metric') ? : 'wt';
+		$threshold = (float)$request->get('threshold') ? : 0.01;
+		$callgraph = $profile->getCallgraph($metric, $threshold);
+
+		$response['Content-Type'] = 'application/json';
+		return $response->body(json_encode($callgraph));
+	}
 
 }

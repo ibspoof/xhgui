@@ -6,16 +6,21 @@ class Xhgui_Controller_Custom extends Xhgui_Controller
     protected $_profiles;
 	protected $_server;
 
-    public function __construct($app, $profiles, $server=null)
+    public function __construct($app, $profiles)
     {
         $this->_app = $app;
         $this->_profiles = $profiles;
-		$this->_server = $server;
     }
+
+	public function setServer($server)
+	{
+		$this->_server = $server;
+	}
+
 
     public function get()
     {
-        $this->_template('custom/create.twig');
+        $this->_template = 'custom/create.twig';
 		$this->set(array(
 			'server' => $this->_server
 		));

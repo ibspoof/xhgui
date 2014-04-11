@@ -25,9 +25,11 @@ class Xhgui_Profiles
     {
         $conditions = array();
 
-        if (!is_null($server)) {
-            $conditions = array('meta.SERVER.SERVER_NAME' => $server);
-        }
+		if (!is_null($server)) {
+			$conditions = array(
+					'meta.SERVER.SERVER_NAME' => $server,
+			);
+		}
 
         $cursor = $this->_collection->find($conditions)
             ->sort(array('meta.request_date' => -1))
@@ -38,6 +40,7 @@ class Xhgui_Profiles
 
     public function query($conditions, $fields = null)
     {
+		print_r($conditions);
         return $this->_collection->find($conditions, $fields);
     }
 
@@ -78,7 +81,7 @@ class Xhgui_Profiles
     {
         $opts = $this->_mapper->convert($options);
 
-        $totalRows = $this->_collection->find(
+		$totalRows = $this->_collection->find(
             $opts['conditions'],
             array('_id' => 1))->count();
 

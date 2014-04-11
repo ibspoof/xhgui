@@ -1,4 +1,9 @@
 <?php
+
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 /**
  * Routes for Xhgui
  */
@@ -25,69 +30,92 @@ $app->get('/', function () use ($di, $app) {
     $app->controller->index();
 })->name('home');
 
-$app->get('/run/view', function () use ($di, $app) {
+$app->get('/:server', function ($server) use ($di, $app) {
+	$app->controller = $di['runController'];
+	$app->controller->setServer($server);
+	$app->controller->server();
+})->name('server');
+
+$app->get('/:server/run/view', function ($server) use ($di, $app) {
     $app->controller = $di['runController'];
+    $app->controller->setServer($server);
     $app->controller->view();
 })->name('run.view');
 
-$app->get('/url/view', function () use ($di, $app) {
+$app->get('/:server/url/view', function ($server) use ($di, $app) {
     $app->controller = $di['runController'];
+	$app->controller->setServer($server);
     $app->controller->url();
 })->name('url.view');
 
-$app->get('/run/compare', function () use ($di, $app) {
+$app->get('/:server/run/compare', function ($server) use ($di, $app) {
     $app->controller = $di['runController'];
+	$app->controller->setServer($server);
     $app->controller->compare();
 })->name('run.compare');
 
-$app->get('/run/symbol', function () use ($di, $app) {
+$app->get('/:server/run/symbol', function ($server) use ($di, $app) {
     $app->controller = $di['runController'];
+	$app->controller->setServer($server);
     $app->controller->symbol();
 })->name('run.symbol');
 
-$app->get('/run/callgraph', function () use ($di, $app) {
+$app->get('/:server/run/callgraph', function ($server) use ($di, $app) {
     $app->controller = $di['runController'];
+	$app->controller->setServer($server);
     $app->controller->callgraph();
 })->name('run.callgraph');
 
-$app->get('/run/callgraph/data', function () use ($di, $app) {
-    $di['runController']->callgraphData();
+$app->get('/:server/run/callgraph/data', function ($server) use ($di, $app) {
+	$app->controller = $di['runController'];
+	$app->controller->setServer($server);
+	$app->controller->callgraphData();
 })->name('run.callgraph.data');
 
 // Watch function routes.
-$app->get('/watch', function () use ($di, $app) {
-    $app->controller = $di['watchController'];
+$app->get('/:server/watch', function ($server) use ($di, $app) {
+	$app->controller = $di['watchController'];
+	$app->controller->setServer($server);
     $app->controller->get();
 })->name('watch.list');
 
-$app->post('/watch', function () use ($di) {
-    $di['watchController']->post();
+$app->post('/:server/watch', function ($server) use ($di, $app) {
+	$app->controller = $di['watchController'];
+	$app->controller->setServer($server);
+	$app->controller->post();
 })->name('watch.save');
 
 
 // Custom report routes.
-$app->get('/custom', function () use ($di, $app) {
+$app->get('/:server/custom', function ($server) use ($di, $app) {
     $app->controller = $di['customController'];
+	$app->controller->setServer($server);
     $app->controller->get();
 })->name('custom.view');
 
-$app->get('/custom/help', function () use ($di, $app) {
+$app->get('/:server/custom/help', function ($server) use ($di, $app) {
     $app->controller = $di['customController'];
+	$app->controller->setServer($server);
     $app->controller->help();
 })->name('custom.help');
 
-$app->post('/custom/query', function () use ($di) {
-    $di['customController']->query();
+$app->post('/:server/custom/query', function ($server) use ($di, $app) {
+	$app->controller = $di['customController'];
+	$app->controller->setServer($server);
+	$app->controller->query();
 })->name('custom.query');
 
 
 // Waterfall routes
-$app->get('/waterfall', function () use ($di, $app) {
-    $app->controller = $di['waterfallController'];
+$app->get('/:server/waterfall', function ($server) use ($di, $app) {
+	$app->controller = $di['waterfallController'];
+	$app->controller->setServer($server);
     $app->controller->index();
 })->name('waterfall.list');
 
-$app->get('/waterfall/data', function () use ($di) {
-    $di['waterfallController']->query();
+$app->get('/:server/waterfall/data', function ($server) use ($di, $app) {
+	$app->controller = $di['waterfallController'];
+	$app->controller->setServer($server);
+	$app->controller->query();
 })->name('waterfall.data');
 

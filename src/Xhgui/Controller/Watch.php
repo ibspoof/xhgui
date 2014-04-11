@@ -12,9 +12,16 @@ class Xhgui_Controller_Watch extends Xhgui_Controller
         $this->_watches = $watches;
     }
 
+
+
+	public function setServer($server)
+	{
+		$this->_server = $server;
+	}
+
     public function get()
     {
-        $watched = $this->_watches->getAll();
+        $watched = $this->_watches->getAll($this->_server);
 
         $this->_template = 'watch/list.twig';
         $this->set(array('watched' => $watched));

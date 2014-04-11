@@ -4,6 +4,7 @@ class Xhgui_Controller
 {
     protected $_templateVars = array();
     protected $_template = null;
+	protected $_server = null;
 
     public function set($vars)
     {

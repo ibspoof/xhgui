@@ -35,8 +35,9 @@
 if (!extension_loaded('xhprof')) {
     error_log('xhgui - extension xhprof not loaded');
     return;
-	
-// Obtain the answer to life, the universe, and your application one time out of a hundred 
+}
+
+// Obtain the answer to life, the universe, and your application one time out of a hundred
 if (!empty($_COOKIE['XHPROF_ENABLED']) || rand(0, 100) === 42) {
     xhprof_enable(XHPROF_FLAGS_CPU | XHPROF_FLAGS_MEMORY);
     register_shutdown_function('Xhgui_recordXHProfData');
@@ -82,11 +83,6 @@ register_shutdown_function(function() {
     ignore_user_abort(true);
     flush();
 
-    $data['hostname'] = gethostname();
-    $data['url_host'] = $_SERVER['SERVER_NAME'];
-
-    $data['profile'] = xhprof_disable();
-
     if (!defined('XHGUI_ROOT_DIR')) {
         require dirname(dirname(__FILE__)) . '/src/bootstrap.php';
     }
@@ -118,6 +114,10 @@ register_shutdown_function(function() {
         'request_date' => date('Y-m-d', $_SERVER['REQUEST_TIME']),
     );
 
+	$data['hostname'] = gethostname();
+	$data['url_host'] = $_SERVER['SERVER_NAME'];
+
+	$data['profile'] = xhprof_disable();
 
     $data['meta']['url'] = xHprofRemoveBlacklist($data['meta']['url']);
     $data['meta']['SERVER']['QUERY_STRING'] = xHprofRemoveBlacklist($data['meta']['SERVER']['QUERY_STRING']);
@@ -129,6 +129,7 @@ register_shutdown_function(function() {
     }
 
     $data['meta']['url'] = explode('?', urldecode($data['meta']['url']));
+
     if (count($data['meta']['url']) > 1) {
         $data['meta']['url'] = $data['meta']['url'][0] . '?' . xHprofRemoveBlacklist($data['meta']['url'][1]);
     } else {
